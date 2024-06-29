@@ -29,10 +29,13 @@
 #include <limits>
 
 #include "boost/json.hpp"
+#include "fmt/core.h"
 
-#include "yy_cpp/yy_vector.h"
 #include "yy_cpp/yy_fm_flat_trie.h"
+#include "yy_cpp/yy_tokenizer.h"
+#include "yy_cpp/yy_vector.h"
 
+#include "yy_json_constants.h"
 #include "yy_json_pointer_util.h"
 
 namespace yafiyogi::yy_json {
@@ -93,6 +96,35 @@ class Query final
       return state;
     }
 
+    value_type * find_pointer(std::string_view p_pointer)
+    {
+      auto span = yy_quad::make_const_span(p_pointer);
+      if(json_detail::PathLevelSeparatorChar == span[0])
+      {
+        span.inc_begin();
+      }
+      yy_util::tokenizer<std::string_view::value_type> tokenizer{span,
+          json_detail::PathLevelSeparatorChar};
+
+      auto state = root();
+      while(!tokenizer.empty())
+      {
+        auto token = tokenizer.scan();
+        if(state = find_level(std::string_view{token.begin(), token.end()}, state);
+           nullptr == state)
+        {
+          break;
+        }
+      }
+
+      value_type * found = nullptr;
+      if(nullptr != state)
+      {
+        found = state->data();
+      }
+      return found;
+    }
+
     node_type * root() const noexcept
     {
       return m_nodes.data();
@@ -118,14 +150,14 @@ struct pointer_traits final
 {
     using label_type = yy_traits::remove_rcv_t<LabelType>;
     using value_type = yy_traits::remove_rcv_t<ValueType>;
-    using pointers_type = yy_data::fm_flat_trie<label_type,
-                                                value_type,
-                                                json_pointer_detail::Query>;
-    using size_type = typename pointers_type::size_type;
+    using pointers_builder_type = yy_data::fm_flat_trie<label_type,
+                                                        value_type,
+                                                        json_pointer_detail::Query>;
+    using size_type = typename pointers_builder_type::size_type;
     using pointers_config_type = pointers_config<LabelType, ValueType>;
     using scope_element_type = scope_element<LabelType, ValueType>;
 
-    using query_type = typename pointers_type::automaton;
+    using query_type = typename pointers_builder_type::automaton;
 };
 
 template<typename LabelType,
@@ -154,7 +186,6 @@ struct scope_element final
     using label_type = typename traits::label_type;
     using query_type = typename traits::query_type;
 
-
     std::string_view key;
     size_t idx{};
     query_type::node_type * state{};
@@ -178,7 +209,13 @@ class handler final
     class visitor_type
     {
       public:
+        visitor_type() noexcept = default;
+        visitor_type(const visitor_type &) noexcept = default;
+        visitor_type(visitor_type &&) noexcept = default;
         virtual ~visitor_type() noexcept = default;
+
+        visitor_type & operator=(const visitor_type &) noexcept = default;
+        visitor_type & operator=(visitor_type &&) noexcept = default;
 
         virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* str */) {}
         virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::int64_t /* num */) {}
@@ -193,13 +230,12 @@ class handler final
     constexpr static std::size_t max_key_size = std::numeric_limits<std::size_t>::max();
     constexpr static std::size_t max_string_size = std::numeric_limits<std::size_t>::max();
 
-    constexpr handler(pointers_config_type && p_pointers,
-                      visitor_ptr && p_visitor) noexcept:
+    constexpr handler(pointers_config_type && p_config) noexcept:
       m_scope(),
-      m_pointers(std::move(p_pointers.pointers)),
-      m_visitor(std::move(p_visitor))
+      m_pointers(std::move(p_config.pointers)),
+      m_visitor()
     {
-      m_scope.reserve(p_pointers.max_depth);
+      m_scope.reserve(p_config.max_depth);
     }
 
     constexpr handler() noexcept = default;
@@ -208,6 +244,17 @@ class handler final
 
     constexpr handler & operator=(const handler &) = delete;
     constexpr handler & operator=(handler &&) noexcept = default;
+
+
+    value_type * find(std::string_view p_pointer)
+    {
+      return m_pointers.find_pointer(p_pointer);
+    }
+
+    void set_visitor(visitor_ptr && p_visitor)
+    {
+      m_visitor = std::move(p_visitor);
+    }
 
     constexpr void reset()
     {
@@ -362,7 +409,6 @@ class handler final
           break;
 
         case ScopeType::None:
-      fmt::print("handle_scope(): 2 none\n");
           // Do nothing.
           break;
       }
@@ -433,12 +479,11 @@ class json_pointer_builder final
     using traits = json_pointer_detail::pointer_traits<std::string, ValueType>;
     using value_type = typename traits::value_type;
     using size_type = typename traits::size_type;
-    using pointers_type = typename traits::pointers_type;
-    using handler = json_pointer_detail::handler<value_type>;
+    using pointers_builder_type = typename traits::pointers_builder_type;
+    using handler_type = json_pointer_detail::handler<value_type>;
 
     using scope_element_type = typename traits::scope_element_type;
     using pointers_config_type = typename traits::pointers_config_type;
-    using query_type = typename traits::query_type;
 
     json_pointer_builder() noexcept = default;
     json_pointer_builder(const json_pointer_builder &) = delete;
@@ -447,8 +492,14 @@ class json_pointer_builder final
     json_pointer_builder & operator=(const json_pointer_builder &) = delete;
     json_pointer_builder & operator=(json_pointer_builder &&) noexcept = default;
 
+    struct data_added_type final
+    {
+        value_type * data = nullptr;
+        bool added = false;
+    };
+
     template<typename InputValueType>
-    void add_pointer(std::string_view p_pointer, InputValueType && value) noexcept
+    data_added_type add_pointer(std::string_view p_pointer, InputValueType && value) noexcept
     {
       static_assert(std::is_convertible_v<yy_traits::remove_rcv_t<InputValueType>, value_type>
                     || (std::is_pointer_v<InputValueType> && std::is_base_of_v<value_type, yy_traits::remove_rcv_t<std::remove_pointer<InputValueType>>>),
@@ -458,7 +509,9 @@ class json_pointer_builder final
 
       m_max_depth = std::max(m_max_depth + 1, levels.size());
 
-      m_pointers.add(levels, std::forward<InputValueType>(value));
+      auto [data, added] = m_pointers_builder.add(levels, std::forward<InputValueType>(value));
+
+      return data_added_type{data, added};
     }
 
     pointers_config_type create() noexcept
@@ -470,11 +523,11 @@ class json_pointer_builder final
     {
       m_max_depth = p_max_depth;
 
-      return pointers_config_type{m_pointers.create_automaton(), m_max_depth};
+      return pointers_config_type{m_pointers_builder.create_automaton(), m_max_depth};
     }
 
   private:
-    pointers_type m_pointers;
+    pointers_builder_type m_pointers_builder;
     size_type m_max_depth{};
 };
 

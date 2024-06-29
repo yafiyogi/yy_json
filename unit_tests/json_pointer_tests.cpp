@@ -1,5 +1,6 @@
 #include <string>
 #include <optional>
+#include <vector>
 
 #include "boost/json/basic_parser_impl.hpp"
 #include "fmt/format.h"
@@ -15,7 +16,7 @@ class TestJsonPointer:
   public:
     using jp_builder = yy_json::json_pointer_builder<int>;
     using value_type = jp_builder::value_type;
-    using json_handler = jp_builder::handler;
+    using json_handler = jp_builder::handler_type;
     using json_scope = json_handler::scope_type;
     using json_parser = boost::json::basic_parser<json_handler>;
 
@@ -92,6 +93,62 @@ class TestJsonPointer:
     std::unique_ptr<visitor> m_visitor;
 };
 
+TEST_F(TestJsonPointer, Add)
+{
+  jp_builder builder{};
+
+  std::vector<std::string> vec = {"/abc", "/def", "/ghi"};
+  std::vector<std::string> res = {"abc", "def", "ghi"};
+  int val = 668;
+
+  for(auto & v : vec)
+  {
+    builder.add_pointer(v, val++);
+  }
+
+  auto config = builder.create();
+
+  auto root = config.pointers.root();
+
+  size_t idx = 0;
+  root->visit([&res, &idx](auto & label, auto) {
+    EXPECT_EQ(label, res[idx]);
+    ++idx;
+  });
+
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/abc"));
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/def"));
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/ghi"));
+}
+
+TEST_F(TestJsonPointer, AddOutOfOrder)
+{
+  jp_builder builder{};
+
+  std::vector<std::string> vec = {"/ghi", "/abc", "/def"};
+  std::vector<std::string> res = {"abc", "def", "ghi"};
+  int val = 668;
+
+  for(auto & v : vec)
+  {
+    builder.add_pointer(v, val++);
+  }
+
+  auto config = builder.create();
+
+  auto root = config.pointers.root();
+
+  size_t idx = 0;
+  root->visit([&res, &idx](auto & label, auto) {
+    EXPECT_EQ(label, res[idx]);
+    ++idx;
+  });
+
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/abc"));
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/def"));
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/ghi"));
+}
+
 TEST_F(TestJsonPointer, SimpleString)
 {
   boost::json::error_code ec{};
@@ -105,7 +162,9 @@ TEST_F(TestJsonPointer, SimpleString)
   std::string js = fmt::format("{{ 'abc' : '{}'}}", m_visitor->m_str.value());
   prepare_json(js);
 
-  json_parser parser{options, builder.create(options.max_depth), std::move(m_visitor)};
+  json_parser parser{options, builder.create(options.max_depth)};
+  parser.handler().set_visitor(std::move(m_visitor));
+
   parser.write_some(false, js.data(), js.size(), ec);
 }
 
@@ -122,7 +181,9 @@ TEST_F(TestJsonPointer, SimpleInt64)
   std::string js = fmt::format("{{ 'abc' : {} }}", m_visitor->m_int64.value());
   prepare_json(js);
 
-  json_parser parser{options, builder.create(options.max_depth), std::move(m_visitor)};
+  json_parser parser{options, builder.create(options.max_depth)};
+  parser.handler().set_visitor(std::move(m_visitor));
+
   parser.write_some(false, js.data(), js.size(), ec);
 }
 
@@ -139,7 +200,9 @@ TEST_F(TestJsonPointer, SimpleDouble)
   std::string js = fmt::format("{{ 'abc' : {} }}", m_visitor->m_double.value());
   prepare_json(js);
 
-  json_parser parser{options, builder.create(options.max_depth), std::move(m_visitor)};
+  json_parser parser{options, builder.create(options.max_depth)};
+  parser.handler().set_visitor(std::move(m_visitor));
+
   parser.write_some(false, js.data(), js.size(), ec);
 }
 
@@ -156,7 +219,9 @@ TEST_F(TestJsonPointer, SimpleBool)
   std::string js = fmt::format("{{ 'abc' : {} }}", m_visitor->m_bool.value() ? "true" : "false");
   prepare_json(js);
 
-  json_parser parser{options, builder.create(options.max_depth), std::move(m_visitor)};
+  json_parser parser{options, builder.create(options.max_depth)};
+  parser.handler().set_visitor(std::move(m_visitor));
+
   parser.write_some(false, js.data(), js.size(), ec);
 }
 
@@ -174,7 +239,9 @@ TEST_F(TestJsonPointer, DocString)
   std::string js = fmt::format("'{}'", m_visitor->m_str.value());
   prepare_json(js);
 
-  json_parser parser{options, builder.create(options.max_depth), std::move(m_visitor)};
+  json_parser parser{options, builder.create(options.max_depth)};
+  parser.handler().set_visitor(std::move(m_visitor));
+
   parser.write_some(false, js.data(), js.size(), ec);
 }
 
@@ -191,7 +258,9 @@ TEST_F(TestJsonPointer, DocInt64)
   std::string js = fmt::format("{}", m_visitor->m_int64.value());
   prepare_json(js);
 
-  json_parser parser{options, builder.create(options.max_depth), std::move(m_visitor)};
+  json_parser parser{options, builder.create(options.max_depth)};
+  parser.handler().set_visitor(std::move(m_visitor));
+
   parser.write_some(false, js.data(), js.size(), ec);
 }
 
@@ -208,7 +277,9 @@ TEST_F(TestJsonPointer, DocDouble)
   std::string js = fmt::format("{}", m_visitor->m_double.value());
   prepare_json(js);
 
-  json_parser parser{options, builder.create(options.max_depth), std::move(m_visitor)};
+  json_parser parser{options, builder.create(options.max_depth)};
+  parser.handler().set_visitor(std::move(m_visitor));
+
   parser.write_some(false, js.data(), js.size(), ec);
 }
 
@@ -225,7 +296,9 @@ TEST_F(TestJsonPointer, DocBool)
   std::string js = fmt::format("{}", m_visitor->m_bool.value() ? "true" : "false");
   prepare_json(js);
 
-  json_parser parser{options, builder.create(options.max_depth), std::move(m_visitor)};
+  json_parser parser{options, builder.create(options.max_depth)};
+  parser.handler().set_visitor(std::move(m_visitor));
+
   parser.write_some(false, js.data(), js.size(), ec);
 }
 
