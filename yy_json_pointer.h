@@ -96,7 +96,7 @@ class Query final
       return state;
     }
 
-    value_type * find_pointer(std::string_view p_pointer)
+    constexpr value_type * find_pointer(std::string_view p_pointer) noexcept
     {
       auto span = yy_quad::make_const_span(p_pointer);
       if(json_detail::PathLevelSeparatorChar == span[0])
@@ -104,7 +104,7 @@ class Query final
         span.inc_begin();
       }
       yy_util::tokenizer<std::string_view::value_type> tokenizer{span,
-          json_detail::PathLevelSeparatorChar};
+                                                                 json_detail::PathLevelSeparatorChar};
 
       auto state = root();
       while(!tokenizer.empty())
@@ -125,7 +125,7 @@ class Query final
       return found;
     }
 
-    node_type * root() const noexcept
+    constexpr node_type * root() const noexcept
     {
       return m_nodes.data();
     }
@@ -209,19 +209,19 @@ class handler final
     class visitor_type
     {
       public:
-        visitor_type() noexcept = default;
-        visitor_type(const visitor_type &) noexcept = default;
-        visitor_type(visitor_type &&) noexcept = default;
-        virtual ~visitor_type() noexcept = default;
+        constexpr visitor_type() noexcept = default;
+        constexpr visitor_type(const visitor_type &) noexcept = default;
+        constexpr visitor_type(visitor_type &&) noexcept = default;
+        constexpr virtual ~visitor_type() noexcept = default;
 
         visitor_type & operator=(const visitor_type &) noexcept = default;
         visitor_type & operator=(visitor_type &&) noexcept = default;
 
-        virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* str */) {}
-        virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::int64_t /* num */) {}
-        virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::uint64_t /* num */) {}
-        virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, double /* num */) {}
-        virtual void apply(const scope_type & /* scope */, value_type & /* payload */, bool /* flag */) {}
+        constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* str */) {}
+        constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::int64_t /* num */) {}
+        constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::uint64_t /* num */) {}
+        constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, double /* num */) {}
+        constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, bool /* flag */) {}
     };
     using visitor_ptr = std::unique_ptr<visitor_type>;
 
@@ -230,7 +230,7 @@ class handler final
     constexpr static std::size_t max_key_size = std::numeric_limits<std::size_t>::max();
     constexpr static std::size_t max_string_size = std::numeric_limits<std::size_t>::max();
 
-    constexpr handler(pointers_config_type && p_config) noexcept:
+    constexpr explicit handler(pointers_config_type && p_config) noexcept:
       m_scope(),
       m_pointers(std::move(p_config.pointers)),
       m_visitor()
@@ -239,24 +239,24 @@ class handler final
     }
 
     constexpr handler() noexcept = default;
-    constexpr handler(const handler &) = delete;
+    handler(const handler &) = delete;
     constexpr handler(handler &&) noexcept = default;
 
-    constexpr handler & operator=(const handler &) = delete;
+    handler & operator=(const handler &) = delete;
     constexpr handler & operator=(handler &&) noexcept = default;
 
 
-    value_type * find(std::string_view p_pointer)
+    constexpr value_type * find(std::string_view p_pointer) noexcept
     {
       return m_pointers.find_pointer(p_pointer);
     }
 
-    void set_visitor(visitor_ptr && p_visitor)
+    constexpr void set_visitor(visitor_ptr && p_visitor) noexcept
     {
       m_visitor = std::move(p_visitor);
     }
 
-    constexpr void reset()
+    constexpr void reset() noexcept
     {
       m_scope.clear(yy_quad::ClearAction::Keep);
     }
@@ -485,12 +485,12 @@ class json_pointer_builder final
     using scope_element_type = typename traits::scope_element_type;
     using pointers_config_type = typename traits::pointers_config_type;
 
-    json_pointer_builder() noexcept = default;
+    constexpr json_pointer_builder() noexcept = default;
     json_pointer_builder(const json_pointer_builder &) = delete;
-    json_pointer_builder(json_pointer_builder &&) noexcept = default;
+    constexpr json_pointer_builder(json_pointer_builder &&) noexcept = default;
 
     json_pointer_builder & operator=(const json_pointer_builder &) = delete;
-    json_pointer_builder & operator=(json_pointer_builder &&) noexcept = default;
+    constexpr json_pointer_builder & operator=(json_pointer_builder &&) noexcept = default;
 
     struct data_added_type final
     {
@@ -499,7 +499,7 @@ class json_pointer_builder final
     };
 
     template<typename InputValueType>
-    data_added_type add_pointer(std::string_view p_pointer, InputValueType && value) noexcept
+    constexpr data_added_type add_pointer(std::string_view p_pointer, InputValueType && value)
     {
       static_assert(std::is_convertible_v<yy_traits::remove_rcv_t<InputValueType>, value_type>
                     || (std::is_pointer_v<InputValueType> && std::is_base_of_v<value_type, yy_traits::remove_rcv_t<std::remove_pointer<InputValueType>>>),
@@ -514,12 +514,12 @@ class json_pointer_builder final
       return data_added_type{data, added};
     }
 
-    pointers_config_type create() noexcept
+    constexpr pointers_config_type create()
     {
       return create(m_max_depth);
     }
 
-    pointers_config_type create(size_t p_max_depth) noexcept
+    constexpr pointers_config_type create(size_t p_max_depth)
     {
       m_max_depth = p_max_depth;
 
