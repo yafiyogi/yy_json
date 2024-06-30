@@ -214,8 +214,8 @@ class handler final
         constexpr visitor_type(visitor_type &&) noexcept = default;
         constexpr virtual ~visitor_type() noexcept = default;
 
-        visitor_type & operator=(const visitor_type &) noexcept = default;
-        visitor_type & operator=(visitor_type &&) noexcept = default;
+        constexpr visitor_type & operator=(const visitor_type &) noexcept = default;
+        constexpr visitor_type & operator=(visitor_type &&) noexcept = default;
 
         constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* str */) {}
         constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::int64_t /* num */) {}
