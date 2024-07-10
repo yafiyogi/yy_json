@@ -80,18 +80,16 @@ class Query final
     [[nodiscard]]
     constexpr node_type * find_level(std::string_view key, node_type * scope) noexcept
     {
-      if(nullptr == scope)
-      {
-        scope = m_nodes.data();
-      }
-
       node_type * state{};
-      auto next_state_do = [&state](node_type ** edge_node, size_type) {
-        state = *edge_node;
-      };
+      if(nullptr != scope)
+      {
+        auto next_state_do = [&state](node_type ** edge_node, size_type) {
+          state = *edge_node;
+        };
 
-      [[maybe_unused]]
-      bool found = scope->find_edge(next_state_do, key);
+        [[maybe_unused]]
+        bool found = scope->find_edge(next_state_do, key);
+      }
 
       return state;
     }
@@ -217,11 +215,11 @@ class handler final
         constexpr visitor_type & operator=(const visitor_type &) noexcept = default;
         constexpr visitor_type & operator=(visitor_type &&) noexcept = default;
 
-        constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* str */) {}
-        constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::int64_t /* num */) {}
-        constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::uint64_t /* num */) {}
-        constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, double /* num */) {}
-        constexpr virtual void apply(const scope_type & /* scope */, value_type & /* payload */, bool /* flag */) {}
+        virtual void apply_str(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* str */) {}
+        virtual void apply_int64(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::int64_t /* num */) {}
+        virtual void apply_uint64(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::uint64_t /* num */) {}
+        virtual void apply_double(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, double /* num */) {}
+        virtual void apply_bool(const scope_type & /* scope */, value_type & /* payload */, bool /* flag */) {}
     };
     using visitor_ptr = std::unique_ptr<visitor_type>;
 
@@ -313,6 +311,7 @@ class handler final
     constexpr bool on_key(std::string_view key, std::size_t, boost::json::error_code&)
     {
       auto & curr = m_scope.back();
+
       curr.last_found = m_pointers.find_level(key, curr.state);
       curr.key = key;
 
@@ -326,8 +325,10 @@ class handler final
 
     constexpr bool on_string(std::string_view raw_str, std::size_t, boost::json::error_code&)
     {
-      handle_scope();
-      apply(raw_str);
+      if(handle_scope())
+      {
+        apply(raw_str);
+      }
 
       return true;
     }
@@ -339,32 +340,40 @@ class handler final
 
     constexpr bool on_int64(std::int64_t num, std::string_view raw_str, boost::json::error_code&)
     {
-      handle_scope();
-      apply(raw_str, num);
+      if(handle_scope())
+      {
+        apply(raw_str, num);
+      }
 
       return true;
     }
 
     constexpr bool on_uint64(std::uint64_t num, std::string_view raw_str, boost::json::error_code&)
     {
-      handle_scope();
-      apply(raw_str, num);
+      if(handle_scope())
+      {
+        apply(raw_str, num);
+      }
 
       return true;
     }
 
     constexpr bool on_double(double num, std::string_view raw_str, boost::json::error_code&)
     {
-      handle_scope();
-      apply(raw_str, num);
+      if(handle_scope())
+      {
+        apply(raw_str, num);
+      }
 
       return true;
     }
 
     constexpr bool on_bool(bool flag, boost::json::error_code&)
     {
-      handle_scope();
-      apply(flag);
+      if(handle_scope())
+      {
+        apply(flag);
+      }
 
       return true;
     }
@@ -387,7 +396,7 @@ class handler final
     }
 
   private:
-    constexpr void handle_scope() noexcept
+    constexpr bool handle_scope() noexcept
     {
       auto & curr = m_scope.back();
 
@@ -405,13 +414,15 @@ class handler final
           break;
 
         case ScopeType::Doc:
-          curr.last_found = m_pointers.find_level("", curr.state);
+          curr.last_found = m_pointers.root();
           break;
 
         case ScopeType::None:
           // Do nothing.
           break;
       }
+
+      return nullptr != curr.last_found;
     }
 
     constexpr value_type * get_payload() noexcept
@@ -428,18 +439,6 @@ class handler final
       return payload;
     }
 
-    constexpr void apply(bool flag)
-    {
-      if(m_visitor)
-      {
-        if(auto payload = get_payload();
-           nullptr != payload)
-        {
-          m_visitor->apply(m_scope, *payload, flag);
-        }
-      }
-    }
-
     constexpr void apply(std::string_view str)
     {
       if(m_visitor)
@@ -447,20 +446,55 @@ class handler final
         if(auto payload = get_payload();
            nullptr != payload)
         {
-          m_visitor->apply(m_scope, *payload, str);
+          m_visitor->apply_str(m_scope, *payload, str);
         }
       }
     }
 
-    template<typename T>
-    constexpr void apply(std::string_view raw, T data)
+    constexpr void apply(std::string_view raw, int64_t data)
     {
       if(m_visitor)
       {
         if(auto payload = get_payload();
            nullptr != payload)
         {
-          m_visitor->apply(m_scope, *payload, raw, data);
+          m_visitor->apply_int64(m_scope, *payload, raw, data);
+        }
+      }
+    }
+
+    constexpr void apply(std::string_view raw, uint64_t data)
+    {
+      if(m_visitor)
+      {
+        if(auto payload = get_payload();
+           nullptr != payload)
+        {
+          m_visitor->apply_uint64(m_scope, *payload, raw, data);
+        }
+      }
+    }
+
+    constexpr void apply(std::string_view raw, double data)
+    {
+      if(m_visitor)
+      {
+        if(auto payload = get_payload();
+           nullptr != payload)
+        {
+          m_visitor->apply_double(m_scope, *payload, raw, data);
+        }
+      }
+    }
+
+    constexpr void apply(bool flag)
+    {
+      if(m_visitor)
+      {
+        if(auto payload = get_payload();
+           nullptr != payload)
+        {
+          m_visitor->apply_bool(m_scope, *payload, flag);
         }
       }
     }

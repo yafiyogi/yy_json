@@ -24,44 +24,44 @@ class TestJsonPointer:
       public json_handler::visitor_type
     {
       public:
-        virtual void apply(const json_scope & /* scope */,
-                           value_type & /* payload */,
-                           std::string_view str )
+        void apply_str(const json_scope & /* scope */,
+                   value_type & /* payload */,
+                   std::string_view str) override
         {
           ASSERT_TRUE(m_str.has_value());
           EXPECT_EQ(str, m_str.value());
         }
 
-        virtual void apply(const json_scope & /* scope */,
-                           value_type & /* payload */,
-                           std::string_view /* raw */,
-                           std::int64_t num)
+        void apply_int64(const json_scope & /* scope */,
+                   value_type & /* payload */,
+                   std::string_view /* raw */,
+                   std::int64_t num) override
         {
           ASSERT_TRUE(m_int64.has_value());
           EXPECT_EQ(num, m_int64.value());
         }
 
-        virtual void apply(const json_scope & /* scope */,
-                           value_type & /* payload */,
-                           std::string_view /* raw */,
-                           std::uint64_t num )
+        void apply_uint64(const json_scope & /* scope */,
+                   value_type & /* payload */,
+                   std::string_view /* raw */,
+                   std::uint64_t num) override
         {
           ASSERT_TRUE(m_uint64.has_value());
           EXPECT_EQ(num, m_uint64.value());
         }
 
-        virtual void apply(const json_scope & /* scope */,
-                           value_type & /* payload */,
-                           std::string_view /* raw */,
-                           double num)
+        void apply_double(const json_scope & /* scope */,
+                   value_type & /* payload */,
+                   std::string_view /* raw */,
+                   double num) override
         {
           ASSERT_TRUE(m_double.has_value());
           EXPECT_EQ(num, m_double.value());
         }
 
-        virtual void apply(const json_scope & /* scope */,
-                           value_type & /* payload */,
-                           bool flag)
+        void apply_bool(const json_scope & /* scope */,
+                   value_type & /* payload */,
+                   bool flag) override
         {
           ASSERT_TRUE(m_bool.has_value());
           EXPECT_EQ(flag, m_bool.value());
@@ -76,7 +76,7 @@ class TestJsonPointer:
 
     void SetUp() override
     {
-        m_visitor = std::make_unique<visitor>();
+      m_visitor = std::make_unique<visitor>();
     }
 
     void TearDown() override
@@ -301,5 +301,77 @@ TEST_F(TestJsonPointer, DocBool)
 
   parser.write_some(false, js.data(), js.size(), ec);
 }
+
+TEST_F(TestJsonPointer, IgnoreNestedString)
+{
+  class visitor_ns final:
+            public json_handler::visitor_type
+  {
+    public:
+      void apply_str(const json_scope & /* scope */,
+                 value_type & /* payload */,
+                     std::string_view /* str */) override
+      {
+        ++count;
+      }
+
+      int count = 0;
+  };
+
+  auto l_visitor = std::make_unique<visitor_ns>();
+  auto raw_visitor = l_visitor.get();
+
+  boost::json::error_code ec{};
+  auto options = boost::json::parse_options{};
+  jp_builder builder{};
+  builder.add_pointer("/abc", 668);
+
+  std::string js = fmt::format("{{ 'abc' : '777', 'nested' : {{ 'abc' : '888' }} }}");
+  prepare_json(js);
+
+  json_parser parser{options, builder.create(options.max_depth)};
+  parser.handler().set_visitor(std::move(l_visitor));
+
+  parser.write_some(false, js.data(), js.size(), ec);
+
+  EXPECT_EQ(1, raw_visitor->count);
+}
+
+TEST_F(TestJsonPointer, MatchNestedString)
+{
+  class visitor_ns final:
+            public json_handler::visitor_type
+  {
+    public:
+      void apply_str(const json_scope & /* scope */,
+                 value_type & /* payload */,
+                     std::string_view /* str */) override
+      {
+        ++count;
+      }
+
+      int count = 0;
+  };
+
+  auto l_visitor = std::make_unique<visitor_ns>();
+  auto raw_visitor = l_visitor.get();
+
+  boost::json::error_code ec{};
+  auto options = boost::json::parse_options{};
+  jp_builder builder{};
+  builder.add_pointer("/nested/abc", 668);
+
+  std::string js = fmt::format("{{ 'abc' : '777', 'nested' : {{ 'abc' : '888' }} }}");
+  prepare_json(js);
+
+  json_parser parser{options, builder.create(options.max_depth)};
+  parser.handler().set_visitor(std::move(l_visitor));
+
+  parser.write_some(false, js.data(), js.size(), ec);
+
+  EXPECT_EQ(1, raw_visitor->count);
+}
+
+
 
 } // namespace yafiyogi::yy_cpp::tests
