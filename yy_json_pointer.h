@@ -31,7 +31,7 @@
 #include "boost/json.hpp"
 #include "fmt/core.h"
 
-#include "yy_cpp/yy_fm_flat_trie.h"
+#include "yy_cpp/yy_fm_flat_trie_ptr.h"
 #include "yy_cpp/yy_tokenizer.h"
 #include "yy_cpp/yy_vector.h"
 
@@ -47,7 +47,7 @@ template<typename LabelType,
 class Query final
 {
   public:
-    using traits = yy_data::fm_flat_trie_detail::trie_ptr_traits<LabelType, ValueType>;
+    using traits = yy_data::fm_flat_trie_ptr_detail::trie_ptr_traits<LabelType, ValueType>;
     using label_type = typename traits::label_type;
     using node_type = typename traits::node_type;
     using value_type = typename traits::value_type;
@@ -102,7 +102,7 @@ class Query final
         span.inc_begin();
       }
       yy_util::tokenizer<std::string_view::value_type> tokenizer{span,
-                                                                 json_detail::PathLevelSeparatorChar};
+          json_detail::PathLevelSeparatorChar};
 
       auto state = root();
       while(!tokenizer.empty())
@@ -146,11 +146,11 @@ template<typename LabelType,
          typename ValueType>
 struct pointer_traits final
 {
-    using label_type = yy_traits::remove_rcv_t<LabelType>;
-    using value_type = yy_traits::remove_rcv_t<ValueType>;
-    using pointers_builder_type = yy_data::fm_flat_trie<label_type,
-                                                        value_type,
-                                                        json_pointer_detail::Query>;
+    using label_type = yy_traits::remove_cvr_t<LabelType>;
+    using value_type = yy_traits::remove_cvr_t<ValueType>;
+    using pointers_builder_type = yy_data::fm_flat_trie_ptr<label_type,
+                                                            value_type,
+                                                            json_pointer_detail::Query>;
     using size_type = typename pointers_builder_type::size_type;
     using pointers_config_type = pointers_config<LabelType, ValueType>;
     using scope_element_type = scope_element<LabelType, ValueType>;
@@ -535,8 +535,8 @@ class json_pointer_builder final
     template<typename InputValueType>
     constexpr data_added_type add_pointer(std::string_view p_pointer, InputValueType && value)
     {
-      static_assert(std::is_convertible_v<yy_traits::remove_rcv_t<InputValueType>, value_type>
-                    || (std::is_pointer_v<InputValueType> && std::is_base_of_v<value_type, yy_traits::remove_rcv_t<std::remove_pointer<InputValueType>>>),
+      static_assert(std::is_convertible_v<yy_traits::remove_cvr_t<InputValueType>, value_type>
+                    || (std::is_pointer_v<InputValueType> && std::is_base_of_v<value_type, yy_traits::remove_cvr_t<std::remove_pointer<InputValueType>>>),
                     "Value is of an incompatible type.");
 
       auto levels = json_pointer_tokenize(json_pointer_trim(p_pointer));
