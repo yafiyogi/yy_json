@@ -34,8 +34,9 @@ project(yy_json LANGUAGES CXX)
 set(YY_ROOT "${PROJECT_SOURCE_DIR}/..")
 set(YY_CMAKE "${YY_ROOT}/yy_cmake")
 
-include(${YY_CMAKE}/cmake_common.txt)
 include(${YY_CMAKE}/cmake_boost-1.84.0.txt)
+include(${YY_CMAKE}/cmake_clang_tidy.txt)
+include(${YY_CMAKE}/cmake_common.txt)
 
 find_package(Boost 1.84.0 REQUIRED COMPONENTS json)
 
@@ -59,3 +60,8 @@ add_subdirectory(unit_tests)
 
 install(TARGETS yy_json )
 install(FILES ${YY_JSON_HEADERS} DESTINATION include/yy_json )
+
+get_target_property(YY_JSON_SOURCES yy_json SOURCES)
+
+add_custom_target(tidy-all
+ COMMAND rm clang-tidy.log \; for f in "$$(" echo \"${YY_JSON_HEADERS} ${YY_JSON_SOURCES}\" | sed -n -e 's/;/ /pg' ")" \; do ${YY_CLANG_TIDY_CMD} ${YY_CLANG_TIDY_OPTIONS} "$$f" -- ${YY_TIDY_COMPILER_OPTIONS} >> clang-tidy.log \; done)

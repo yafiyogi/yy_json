@@ -24,8 +24,11 @@
 
 */
 
+#include <cstddef>
+
 #include <algorithm>
 
+#include "yy_cpp/yy_span.h"
 #include "yy_cpp/yy_string_util.h"
 #include "yy_cpp/yy_tokenizer.h"
 
@@ -41,7 +44,9 @@ std::string_view json_pointer_trim(const std::string_view p_pointer) noexcept
 
 PathLevels json_pointer_tokenize(const std::string_view p_pointer) noexcept
 {
-  std::size_t num_levels = static_cast<std::size_t>(std::count(p_pointer.begin(), p_pointer.end(), json_detail::PathLevelSeparatorChar));
+  auto num_levels = static_cast<std::size_t>(std::count(p_pointer.begin(),
+                                                        p_pointer.end(),
+                                                        json_detail::PathLevelSeparatorChar));
   PathLevels levels;
   levels.reserve(num_levels);
 

@@ -26,13 +26,22 @@
 
 #pragma once
 
-#include <limits>
+#include <cstddef>
+#include <cstdint>
 
-#include "boost/json.hpp"
+#include <limits>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <type_traits>
+
+#include "boost/json/basic_parser_impl.hpp"
 #include "fmt/core.h"
 
 #include "yy_cpp/yy_fm_flat_trie_ptr.h"
+#include "yy_cpp/yy_span.h"
 #include "yy_cpp/yy_tokenizer.h"
+#include "yy_cpp/yy_type_traits.h"
 #include "yy_cpp/yy_vector.h"
 
 #include "yy_json_constants.h"
@@ -102,7 +111,7 @@ class Query final
         span.inc_begin();
       }
       yy_util::tokenizer<std::string_view::value_type> tokenizer{span,
-          json_detail::PathLevelSeparatorChar};
+                                                                 json_detail::PathLevelSeparatorChar};
 
       auto state = root();
       while(!tokenizer.empty())
@@ -170,10 +179,10 @@ struct pointers_config final
     size_type max_depth{};
 };
 
-enum class ScopeType { None,
-                       Doc,
-                       Object,
-                       Array };
+enum class ScopeType:uint8_t { None,
+                               Doc,
+                               Object,
+                               Array };
 
 template<typename LabelType,
          typename ValueType>
@@ -183,9 +192,10 @@ struct scope_element final
     using value_type = typename traits::value_type;
     using label_type = typename traits::label_type;
     using query_type = typename traits::query_type;
+    using size_type = typename traits::size_type;
 
     std::string_view key;
-    size_t idx{};
+    size_type idx{};
     query_type::node_type * state{};
     query_type::node_type * last_found{};
     ScopeType scope_type = ScopeType::None;
@@ -239,6 +249,7 @@ class handler final
     constexpr handler() noexcept = default;
     handler(const handler &) = delete;
     constexpr handler(handler &&) noexcept = default;
+    constexpr ~handler() noexcept = default;
 
     handler & operator=(const handler &) = delete;
     constexpr handler & operator=(handler &&) noexcept = default;
@@ -259,19 +270,19 @@ class handler final
       m_scope.clear(yy_quad::ClearAction::Keep);
     }
 
-    constexpr bool on_document_begin(boost::json::error_code&)
+    constexpr bool on_document_begin(boost::json::error_code & /* ec */)
     {
       m_scope.emplace_back(scope_element_type{"", 0, m_pointers.root(), nullptr, ScopeType::Doc});
       return true;
     }
 
-    constexpr bool on_document_end(boost::json::error_code&)
+    constexpr bool on_document_end(boost::json::error_code & /* ec */)
     {
       m_scope.pop_back(yy_quad::ClearAction::Keep);
       return true;
     }
 
-    constexpr bool on_object_begin(boost::json::error_code&)
+    constexpr bool on_object_begin(boost::json::error_code & /* ec */)
     {
       handle_scope();
 
@@ -281,13 +292,14 @@ class handler final
       return true;
     }
 
-    constexpr bool on_object_end(std::size_t, boost::json::error_code&)
+    constexpr bool on_object_end(std::size_t /* size */,
+                                 boost::json::error_code & /* ec */)
     {
       m_scope.pop_back(yy_quad::ClearAction::Keep);
       return true;
     }
 
-    constexpr bool on_array_begin(boost::json::error_code&)
+    constexpr bool on_array_begin(boost::json::error_code & /* ec */)
     {
       handle_scope();
 
@@ -297,18 +309,23 @@ class handler final
       return true;
     }
 
-    constexpr bool on_array_end(std::size_t, boost::json::error_code&)
+    constexpr bool on_array_end(std::size_t /* size */,
+                                boost::json::error_code & /* ec */)
     {
       m_scope.pop_back(yy_quad::ClearAction::Keep);
       return true;
     }
 
-    constexpr bool on_key_part(std::string_view, std::size_t, boost::json::error_code&)
+    constexpr bool on_key_part(std::string_view /* part */,
+                               std::size_t /* size */,
+                               boost::json::error_code & /* ec */)
     {
       return true;
     }
 
-    constexpr bool on_key(std::string_view key, std::size_t, boost::json::error_code&)
+    constexpr bool on_key(std::string_view key,
+                          std::size_t /* size */,
+                          boost::json::error_code & /* ec */)
     {
       auto & curr = m_scope.back();
 
@@ -318,12 +335,16 @@ class handler final
       return true;
     }
 
-    constexpr bool on_string_part(std::string_view, std::size_t, boost::json::error_code&)
+    constexpr bool on_string_part(std::string_view /* part */,
+                                  std::size_t /* size */,
+                                  boost::json::error_code & /* ec */)
     {
       return true;
     }
 
-    constexpr bool on_string(std::string_view raw_str, std::size_t, boost::json::error_code&)
+    constexpr bool on_string(std::string_view raw_str,
+                             std::size_t /* size */,
+                             boost::json::error_code & /* ec */)
     {
       if(handle_scope())
       {
@@ -333,22 +354,15 @@ class handler final
       return true;
     }
 
-    constexpr bool on_number_part(std::string_view, boost::json::error_code&)
+    constexpr bool on_number_part(std::string_view /* part */,
+                                  boost::json::error_code & /* ec */)
     {
       return true;
     }
 
-    constexpr bool on_int64(std::int64_t num, std::string_view raw_str, boost::json::error_code&)
-    {
-      if(handle_scope())
-      {
-        apply(raw_str, num);
-      }
-
-      return true;
-    }
-
-    constexpr bool on_uint64(std::uint64_t num, std::string_view raw_str, boost::json::error_code&)
+    constexpr bool on_int64(std::int64_t num,
+                            std::string_view raw_str,
+                            boost::json::error_code & /* ec */)
     {
       if(handle_scope())
       {
@@ -358,7 +372,9 @@ class handler final
       return true;
     }
 
-    constexpr bool on_double(double num, std::string_view raw_str, boost::json::error_code&)
+    constexpr bool on_uint64(std::uint64_t num,
+                             std::string_view raw_str,
+                             boost::json::error_code & /* ec */)
     {
       if(handle_scope())
       {
@@ -368,7 +384,20 @@ class handler final
       return true;
     }
 
-    constexpr bool on_bool(bool flag, boost::json::error_code&)
+    constexpr bool on_double(double num,
+                             std::string_view raw_str,
+                             boost::json::error_code & /* ec */)
+    {
+      if(handle_scope())
+      {
+        apply(raw_str, num);
+      }
+
+      return true;
+    }
+
+    constexpr bool on_bool(bool flag,
+                           boost::json::error_code & /* ec */)
     {
       if(handle_scope())
       {
@@ -378,18 +407,20 @@ class handler final
       return true;
     }
 
-    constexpr bool on_null(boost::json::error_code&)
+    constexpr bool on_null(boost::json::error_code & /* ec */)
     {
       handle_scope();
       return true;
     }
 
-    constexpr bool on_comment_part(std::string_view, boost::json::error_code&)
+    constexpr bool on_comment_part(std::string_view /* part */,
+                                   boost::json::error_code & /* ec */)
     {
       return true;
     }
 
-    constexpr bool on_comment(std::string_view, boost::json::error_code&)
+    constexpr bool on_comment(std::string_view /* comment */,
+                              boost::json::error_code & /* ec */)
     {
       handle_scope();
       return true;
@@ -522,6 +553,7 @@ class json_pointer_builder final
     constexpr json_pointer_builder() noexcept = default;
     json_pointer_builder(const json_pointer_builder &) = delete;
     constexpr json_pointer_builder(json_pointer_builder &&) noexcept = default;
+    constexpr ~json_pointer_builder() noexcept = default;
 
     json_pointer_builder & operator=(const json_pointer_builder &) = delete;
     constexpr json_pointer_builder & operator=(json_pointer_builder &&) noexcept = default;
@@ -561,7 +593,7 @@ class json_pointer_builder final
     }
 
   private:
-    pointers_builder_type m_pointers_builder;
+    pointers_builder_type m_pointers_builder{};
     size_type m_max_depth{};
 };
 
