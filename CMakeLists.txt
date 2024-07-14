@@ -64,4 +64,4 @@ install(FILES ${YY_JSON_HEADERS} DESTINATION include/yy_json )
 get_target_property(YY_JSON_SOURCES yy_json SOURCES)
 
 add_custom_target(tidy-all
- COMMAND rm clang-tidy.log \; for f in "$$(" echo \"${YY_JSON_HEADERS} ${YY_JSON_SOURCES}\" | sed -n -e 's/;/ /pg' ")" \; do ${YY_CLANG_TIDY_CMD} ${YY_CLANG_TIDY_OPTIONS} "$$f" -- ${YY_TIDY_COMPILER_OPTIONS} >> clang-tidy.log \; done)
+ COMMAND rm -f clang-tidy.log \; for f in "$$(" echo \"${YY_JSON_HEADERS} ${YY_JSON_SOURCES}\" | sed -n -e 's/;/ /pg' ")" \; do ${YY_CLANG_TIDY_CMD} ${YY_CLANG_TIDY_OPTIONS} "$$f" -- ${YY_TIDY_COMPILER_OPTIONS} >> clang-tidy.log \; done)
