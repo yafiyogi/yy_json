@@ -96,8 +96,7 @@ class Query final
           state = *edge_node;
         };
 
-        [[maybe_unused]]
-        bool found = scope->find_edge(next_state_do, key);
+        std::ignore = scope->find_edge(next_state_do, key);
       }
 
       return state;
