@@ -131,7 +131,7 @@ class Query final
       return found;
     }
 
-    constexpr node_type * root() const noexcept
+    constexpr node_type * root() noexcept
     {
       return m_nodes.data();
     }
