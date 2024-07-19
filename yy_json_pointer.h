@@ -49,6 +49,8 @@
 
 namespace yafiyogi::yy_json {
 
+using namespace std::string_view_literals;
+
 namespace json_pointer_detail {
 
 template<typename LabelType,
@@ -434,7 +436,8 @@ class handler final
       {
         case ScopeType::Array:
         {
-          std::string level_str{fmt::format("{}", curr.idx)};
+          std::string level_str{fmt::format("{}"sv, curr.idx)};
+
           curr.last_found = m_pointers.find_level(std::string_view{level_str}, curr.state);
           ++curr.idx;
           break;
