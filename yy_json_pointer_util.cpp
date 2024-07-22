@@ -50,14 +50,8 @@ PathLevels json_pointer_tokenize(const std::string_view p_pointer) noexcept
   PathLevels levels;
   levels.reserve(num_levels);
 
-  auto span = yy_quad::make_const_span(p_pointer);
-  if(json_detail::PathLevelSeparatorChar == p_pointer[0])
-  {
-    span.inc_begin();
-  }
-
-  yy_util::tokenizer<std::string_view::value_type> tokenizer{span,
-                                                             json_detail::PathLevelSeparatorChar};
+  yy_util::tokenizer_first<std::string_view::value_type> tokenizer{yy_quad::make_const_span(p_pointer),
+                                                                   json_detail::PathLevelSeparatorChar};
 
   while(!tokenizer.empty())
   {

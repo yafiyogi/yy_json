@@ -106,13 +106,8 @@ class Query final
 
     constexpr value_type * find_pointer(std::string_view p_pointer) noexcept
     {
-      auto span = yy_quad::make_const_span(p_pointer);
-      if(json_detail::PathLevelSeparatorChar == span[0])
-      {
-        span.inc_begin();
-      }
-      yy_util::tokenizer<std::string_view::value_type> tokenizer{span,
-                                                                 json_detail::PathLevelSeparatorChar};
+      yy_util::tokenizer_first<std::string_view::value_type> tokenizer{yy_quad::make_const_span(p_pointer),
+                                                                       json_detail::PathLevelSeparatorChar};
 
       auto state = root();
       while(!tokenizer.empty())
