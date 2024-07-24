@@ -239,10 +239,11 @@ class handler final
       m_pointers(std::move(p_config.pointers)),
       m_visitor()
     {
+      m_int_buffer.reserve(21);
       m_scope.reserve(p_config.max_depth);
     }
 
-    constexpr handler() noexcept = default;
+    constexpr handler() noexcept = delete;
     handler(const handler &) = delete;
     constexpr handler(handler &&) noexcept = default;
     constexpr ~handler() noexcept = default;
@@ -431,9 +432,10 @@ class handler final
       {
         case ScopeType::Array:
         {
-          std::string level_str{fmt::format("{}"sv, curr.idx)};
+          m_int_buffer.clear();
+          fmt::format_to(std::back_inserter(m_int_buffer), "{}"sv, curr.idx);
 
-          curr.last_found = m_pointers.find_level(std::string_view{level_str}, curr.state);
+          curr.last_found = m_pointers.find_level(std::string_view{m_int_buffer}, curr.state);
           ++curr.idx;
           break;
         }
@@ -527,6 +529,7 @@ class handler final
       }
     }
 
+    std::string m_int_buffer;
     scope_type m_scope;
     query_type m_pointers;
     visitor_ptr m_visitor;
