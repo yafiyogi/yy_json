@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.24)
 project(test_yy_json LANGUAGES CXX)
 
 find_package(Boost 1.84.0 REQUIRED COMPONENTS locale)
+find_package(fmt REQUIRED)
+find_package(GTest REQUIRED)
+find_package(spdlog REQUIRED)
+find_package(yy_cpp REQUIRED)
+find_package(yy_test REQUIRED)
 
 add_executable(test_yy_json
   json_pointer_tests.cpp )
@@ -15,12 +20,7 @@ target_include_directories(test_yy_json
 
 target_link_directories(test_yy_json
   PUBLIC
-  ${CMAKE_INSTALL_PREFIX}/lib
   /opt/local/lib )
-
-find_package(fmt REQUIRED)
-find_package(GTest REQUIRED)
-find_package(spdlog REQUIRED)
 
 target_compile_options(yy_json
   PRIVATE
@@ -29,7 +29,8 @@ target_compile_options(yy_json
 
 target_link_libraries(test_yy_json
   yy_json
-  yy_cpp
+  yy_test::yy_test
+  yy_cpp::yy_cpp
   Boost::locale
   Boost::json
   fmt::fmt

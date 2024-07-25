@@ -29,7 +29,7 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(yy_json LANGUAGES CXX)
+project(yy_json LANGUAGES CXX VERSION 0.0.1)
 
 set(YY_ROOT "${PROJECT_SOURCE_DIR}/..")
 set(YY_CMAKE "${YY_ROOT}/yy_cmake")
@@ -50,19 +50,34 @@ target_include_directories(yy_json
 
 target_sources(yy_json
   PRIVATE
-  yy_json_pointer_util.cpp)
+    yy_json_pointer_util.cpp
+  PUBLIC FILE_SET HEADERS
+    FILES
+      yy_json_constants.h
+      yy_json_pointer.h
+      yy_json_pointer_util.h)
 
-set(YY_JSON_HEADERS
-  "yy_json_constants.h"
-  "yy_json_pointer.h"
-  "yy_json_pointer_util.h" )
+install(TARGETS yy_json
+  EXPORT yy_jsonTargets
+  FILE_SET HEADERS DESTINATION include/yy_json)
 
-add_subdirectory(unit_tests)
+install(EXPORT yy_jsonTargets
+  FILE yy_jsonTargets.cmake
+  NAMESPACE yy_json::
+  DESTINATION lib/cmake/yy_json)
 
-install(TARGETS yy_json )
-install(FILES ${YY_JSON_HEADERS} DESTINATION include/yy_json )
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file("yy_jsonConfigVersion.cmake"
+  VERSION ${yy_json_VERSION}
+  COMPATIBILITY AnyNewerVersion)
 
+install(FILES "yy_jsonConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/yy_jsonConfigVersion.cmake"
+    DESTINATION lib/cmake/yy_json)
+
+get_target_property(YY_JSON_HEADERS yy_json HEADER_SET)
 get_target_property(YY_JSON_SOURCES yy_json SOURCES)
 
 add_custom_target(tidy-all
  COMMAND rm -f clang-tidy.log \; for f in "$$(" echo \"${YY_JSON_HEADERS} ${YY_JSON_SOURCES}\" | sed -n -e 's/;/ /pg' ")" \; do ${YY_CLANG_TIDY_CMD} ${YY_CLANG_TIDY_OPTIONS} "$$f" -- ${YY_TIDY_COMPILER_OPTIONS} >> clang-tidy.log \; done)
+
+add_subdirectory(unit_tests)
