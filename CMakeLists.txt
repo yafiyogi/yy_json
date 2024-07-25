@@ -77,7 +77,6 @@ install(FILES "yy_jsonConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/yy_jsonConfigVe
 get_target_property(YY_JSON_HEADERS yy_json HEADER_SET)
 get_target_property(YY_JSON_SOURCES yy_json SOURCES)
 
-add_custom_target(tidy-all
- COMMAND rm -f clang-tidy.log \; for f in "$$(" echo \"${YY_JSON_HEADERS} ${YY_JSON_SOURCES}\" | sed -n -e 's/;/ /pg' ")" \; do ${YY_CLANG_TIDY_CMD} ${YY_CLANG_TIDY_OPTIONS} "$$f" -- ${YY_TIDY_COMPILER_OPTIONS} >> clang-tidy.log \; done)
-
 add_subdirectory(unit_tests)
+
+add_yy_tidy_all(yy_json)
