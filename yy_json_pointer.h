@@ -38,6 +38,7 @@
 #include "boost/json/basic_parser_impl.hpp"
 #include "fmt/core.h"
 
+#include "yy_cpp/yy_int_util.h"
 #include "yy_cpp/yy_fm_flat_trie_ptr.h"
 #include "yy_cpp/yy_span.h"
 #include "yy_cpp/yy_tokenizer.h"
@@ -157,8 +158,8 @@ struct pointer_traits final
                                                             value_type,
                                                             json_pointer_detail::Query>;
     using size_type = typename pointers_builder_type::size_type;
-    using pointers_config_type = pointers_config<LabelType, ValueType>;
-    using scope_element_type = scope_element<LabelType, ValueType>;
+    using pointers_config_type = pointers_config<label_type, value_type>;
+    using scope_element_type = scope_element<label_type, value_type>;
 
     using query_type = typename pointers_builder_type::automaton;
 };
@@ -239,7 +240,7 @@ class handler final
       m_pointers(std::move(p_config.pointers)),
       m_visitor()
     {
-      m_int_buffer.reserve(21);
+      m_int_buffer.reserve(yy_util::Digits<typename scope_element_type::size_type>::digits + 1);
       m_scope.reserve(p_config.max_depth);
     }
 
