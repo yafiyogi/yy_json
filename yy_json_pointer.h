@@ -172,7 +172,7 @@ struct pointers_config final
     using query_type = typename traits::query_type;
     using size_type = typename traits::size_type;
 
-    query_type pointers;
+    query_type pointers{};
     size_type max_depth{};
 };
 
@@ -199,7 +199,8 @@ struct scope_element final
     bool stop = false;
 };
 
-template<typename ValueType>
+template<typename ValueType,
+         typename Visitor>
 class handler final
 {
   public:
@@ -210,35 +211,18 @@ class handler final
     using scope_type = yy_quad::simple_vector<scope_element_type>;
     using pointers_config_type = typename traits::pointers_config_type;
     using query_type = typename traits::query_type;
-
-    class visitor_type
-    {
-      public:
-        constexpr visitor_type() noexcept = default;
-        constexpr visitor_type(const visitor_type &) noexcept = default;
-        constexpr visitor_type(visitor_type &&) noexcept = default;
-        constexpr virtual ~visitor_type() noexcept = default;
-
-        constexpr visitor_type & operator=(const visitor_type &) noexcept = default;
-        constexpr visitor_type & operator=(visitor_type &&) noexcept = default;
-
-        virtual void apply_str(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* str */) {}
-        virtual void apply_int64(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::int64_t /* num */) {}
-        virtual void apply_uint64(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, std::uint64_t /* num */) {}
-        virtual void apply_double(const scope_type & /* scope */, value_type & /* payload */, std::string_view /* raw */, double /* num */) {}
-        virtual void apply_bool(const scope_type & /* scope */, value_type & /* payload */, bool /* flag */) {}
-    };
-    using visitor_ptr = std::unique_ptr<visitor_type>;
+    using visitor_type = yy_traits::remove_cvr_t<Visitor>;
 
     constexpr static std::size_t max_object_size = std::numeric_limits<std::size_t>::max();
     constexpr static std::size_t max_array_size = std::numeric_limits<std::size_t>::max();
     constexpr static std::size_t max_key_size = std::numeric_limits<std::size_t>::max();
     constexpr static std::size_t max_string_size = std::numeric_limits<std::size_t>::max();
 
-    constexpr explicit handler(pointers_config_type && p_config) noexcept:
+    template<typename ...Args>
+    constexpr explicit handler(pointers_config_type && p_config, Args && ...args) noexcept:
       m_scope(),
       m_pointers(std::move(p_config.pointers)),
-      m_visitor()
+      m_visitor(std::forward<Args>(args)...)
     {
       m_int_buffer.reserve(yy_util::Digits<typename scope_element_type::size_type>::digits + 1);
       m_scope.reserve(p_config.max_depth);
@@ -256,11 +240,6 @@ class handler final
     constexpr value_type * find(std::string_view p_pointer) noexcept
     {
       return m_pointers.find_pointer(p_pointer);
-    }
-
-    constexpr void set_visitor(visitor_ptr && p_visitor) noexcept
-    {
-      m_visitor = std::move(p_visitor);
     }
 
     constexpr void reset() noexcept
@@ -424,6 +403,16 @@ class handler final
       return true;
     }
 
+    visitor_type & visitor() noexcept
+    {
+      return m_visitor;
+    }
+
+    const visitor_type & visitor() const noexcept
+    {
+      return m_visitor;
+    }
+
   private:
     constexpr bool handle_scope() noexcept
     {
@@ -472,73 +461,59 @@ class handler final
 
     constexpr void apply(std::string_view str)
     {
-      if(m_visitor)
+      if(auto payload = get_payload();
+         nullptr != payload)
       {
-        if(auto payload = get_payload();
-           nullptr != payload)
-        {
-          m_visitor->apply_str(m_scope, *payload, str);
-        }
+        m_visitor.apply_str(*payload, str);
       }
     }
 
     constexpr void apply(std::string_view raw, int64_t data)
     {
-      if(m_visitor)
+      if(auto payload = get_payload();
+         nullptr != payload)
       {
-        if(auto payload = get_payload();
-           nullptr != payload)
-        {
-          m_visitor->apply_int64(m_scope, *payload, raw, data);
-        }
+        m_visitor.apply_int64(*payload, raw, data);
       }
     }
 
     constexpr void apply(std::string_view raw, uint64_t data)
     {
-      if(m_visitor)
+      if(auto payload = get_payload();
+         nullptr != payload)
       {
-        if(auto payload = get_payload();
-           nullptr != payload)
-        {
-          m_visitor->apply_uint64(m_scope, *payload, raw, data);
-        }
+        m_visitor.apply_uint64(*payload, raw, data);
       }
     }
 
     constexpr void apply(std::string_view raw, double data)
     {
-      if(m_visitor)
+      if(auto payload = get_payload();
+         nullptr != payload)
       {
-        if(auto payload = get_payload();
-           nullptr != payload)
-        {
-          m_visitor->apply_double(m_scope, *payload, raw, data);
-        }
+        m_visitor.apply_double(*payload, raw, data);
       }
     }
 
     constexpr void apply(bool flag)
     {
-      if(m_visitor)
+      if(auto payload = get_payload();
+         nullptr != payload)
       {
-        if(auto payload = get_payload();
-           nullptr != payload)
-        {
-          m_visitor->apply_bool(m_scope, *payload, flag);
-        }
+        m_visitor.apply_bool(*payload, flag);
       }
     }
 
     std::string m_int_buffer;
     scope_type m_scope;
     query_type m_pointers;
-    visitor_ptr m_visitor;
+    visitor_type m_visitor;
 };
 
 } // namespace json_pointer_detail
 
-template<typename ValueType>
+template<typename ValueType,
+         typename Visitor>
 class json_pointer_builder final
 {
   public:
@@ -546,7 +521,7 @@ class json_pointer_builder final
     using value_type = typename traits::value_type;
     using size_type = typename traits::size_type;
     using pointers_builder_type = typename traits::pointers_builder_type;
-    using handler_type = json_pointer_detail::handler<value_type>;
+    using handler_type = json_pointer_detail::handler<value_type, yy_traits::remove_cvr_t<Visitor>>;
 
     using scope_element_type = typename traits::scope_element_type;
     using pointers_config_type = typename traits::pointers_config_type;

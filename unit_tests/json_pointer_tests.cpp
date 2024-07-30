@@ -10,73 +10,77 @@
 
 namespace yafiyogi::yy_cpp::tests {
 
+using namespace std::string_view_literals;
+
 class TestJsonPointer:
       public testing::Test
 {
   public:
-    using jp_builder = yy_json::json_pointer_builder<int>;
-    using value_type = jp_builder::value_type;
-    using json_handler = jp_builder::handler_type;
-    using json_scope = json_handler::scope_type;
-    using json_parser = boost::json::basic_parser<json_handler>;
+    using value_type = int;
 
-    class visitor:
-      public json_handler::visitor_type
+    class test_visitor
     {
       public:
-        void apply_str(const json_scope & /* scope */,
-                   value_type & /* payload */,
-                   std::string_view str) override
+        test_visitor() noexcept = default;
+        test_visitor(const test_visitor &) noexcept = default;
+        test_visitor(test_visitor &&) noexcept = default;
+        virtual ~test_visitor() noexcept = default;
+
+        test_visitor & operator=(const test_visitor &) noexcept = default;
+        test_visitor & operator=(test_visitor &&) noexcept = default;
+
+        virtual void apply_str(value_type & /* payload */,
+                               std::string_view str)
         {
           ASSERT_TRUE(m_str.has_value());
           EXPECT_EQ(str, m_str.value());
         }
 
-        void apply_int64(const json_scope & /* scope */,
-                   value_type & /* payload */,
-                   std::string_view /* raw */,
-                   std::int64_t num) override
+        virtual void apply_int64(value_type & /* payload */,
+                                 std::string_view /* raw */,
+                                 std::int64_t num)
         {
           ASSERT_TRUE(m_int64.has_value());
           EXPECT_EQ(num, m_int64.value());
         }
 
-        void apply_uint64(const json_scope & /* scope */,
-                   value_type & /* payload */,
-                   std::string_view /* raw */,
-                   std::uint64_t num) override
+        virtual void apply_uint64(value_type & /* payload */,
+                                  std::string_view /* raw */,
+                                  std::uint64_t num)
         {
           ASSERT_TRUE(m_uint64.has_value());
           EXPECT_EQ(num, m_uint64.value());
         }
 
-        void apply_double(const json_scope & /* scope */,
-                   value_type & /* payload */,
-                   std::string_view /* raw */,
-                   double num) override
+        virtual void apply_double(value_type & /* payload */,
+                                  std::string_view /* raw */,
+                                  double num)
         {
           ASSERT_TRUE(m_double.has_value());
           EXPECT_EQ(num, m_double.value());
         }
 
-        void apply_bool(const json_scope & /* scope */,
-                   value_type & /* payload */,
-                   bool flag) override
+        virtual void apply_bool(value_type & /* payload */,
+                           bool flag)
         {
           ASSERT_TRUE(m_bool.has_value());
           EXPECT_EQ(flag, m_bool.value());
         }
 
-        std::optional<std::string_view> m_str;
-        std::optional<int64_t> m_int64;
-        std::optional<uint64_t> m_uint64;
-        std::optional<double> m_double;
-        std::optional<bool> m_bool;
+        std::optional<std::string_view> m_str{};
+        std::optional<int64_t> m_int64{};
+        std::optional<uint64_t> m_uint64{};
+        std::optional<double> m_double{};
+        std::optional<bool> m_bool{};
+        int count = 0;
     };
+
+    using jp_builder = yy_json::json_pointer_builder<int, test_visitor>;
+    using json_handler = jp_builder::handler_type;
+    using json_parser = boost::json::basic_parser<json_handler>;
 
     void SetUp() override
     {
-      m_visitor = std::make_unique<visitor>();
     }
 
     void TearDown() override
@@ -89,8 +93,6 @@ class TestJsonPointer:
 
       return js;
     }
-
-    std::unique_ptr<visitor> m_visitor;
 };
 
 TEST_F(TestJsonPointer, Add)
@@ -157,13 +159,14 @@ TEST_F(TestJsonPointer, SimpleString)
 
   builder.add_pointer("/abc", 668);
 
-  m_visitor->m_str = "eight eight eight";
+  auto v_str = "eight eight eight"sv;
 
-  std::string js = fmt::format("{{ 'abc' : '{}'}}", m_visitor->m_str.value());
+  std::string js = fmt::format("{{ 'abc' : '{}'}}", v_str);
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
-  parser.handler().set_visitor(std::move(m_visitor));
+
+  parser.handler().visitor().m_str = v_str;
 
   parser.write_some(false, js.data(), js.size(), ec);
 }
@@ -176,13 +179,14 @@ TEST_F(TestJsonPointer, SimpleInt64)
 
   builder.add_pointer("/abc", 668);
 
-  m_visitor->m_int64 = 888;
+  int64_t v_int64 = 888;
 
-  std::string js = fmt::format("{{ 'abc' : {} }}", m_visitor->m_int64.value());
+  std::string js = fmt::format("{{ 'abc' : {} }}", v_int64);
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
-  parser.handler().set_visitor(std::move(m_visitor));
+
+  parser.handler().visitor().m_int64 = v_int64;
 
   parser.write_some(false, js.data(), js.size(), ec);
 }
@@ -195,13 +199,14 @@ TEST_F(TestJsonPointer, SimpleDouble)
 
   builder.add_pointer("/abc", 668);
 
-  m_visitor->m_double = 888.1;
+  double v_double = 888.1;
 
-  std::string js = fmt::format("{{ 'abc' : {} }}", m_visitor->m_double.value());
+  std::string js = fmt::format("{{ 'abc' : {} }}", v_double);
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
-  parser.handler().set_visitor(std::move(m_visitor));
+
+  parser.handler().visitor().m_double = v_double;
 
   parser.write_some(false, js.data(), js.size(), ec);
 }
@@ -214,13 +219,14 @@ TEST_F(TestJsonPointer, SimpleBool)
 
   builder.add_pointer("/abc", 668);
 
-  m_visitor->m_bool = true;
+  bool v_bool = true;
 
-  std::string js = fmt::format("{{ 'abc' : {} }}", m_visitor->m_bool.value() ? "true" : "false");
+  std::string js = fmt::format("{{ 'abc' : {} }}", v_bool ? "true" : "false");
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
-  parser.handler().set_visitor(std::move(m_visitor));
+
+  parser.handler().visitor().m_bool = v_bool;
 
   parser.write_some(false, js.data(), js.size(), ec);
 }
@@ -234,13 +240,14 @@ TEST_F(TestJsonPointer, DocString)
 
   builder.add_pointer("", 668);
 
-  m_visitor->m_str = "eight eight eight";
+  auto v_str = "eight eight eight"sv;
 
-  std::string js = fmt::format("'{}'", m_visitor->m_str.value());
+  std::string js = fmt::format("'{}'", v_str);
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
-  parser.handler().set_visitor(std::move(m_visitor));
+
+  parser.handler().visitor().m_str = v_str;
 
   parser.write_some(false, js.data(), js.size(), ec);
 }
@@ -253,13 +260,14 @@ TEST_F(TestJsonPointer, DocInt64)
 
   builder.add_pointer("", 668);
 
-  m_visitor->m_int64 = 888;
+  int64_t v_int64 = 888;
 
-  std::string js = fmt::format("{}", m_visitor->m_int64.value());
+  std::string js = fmt::format("{}", v_int64);
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
-  parser.handler().set_visitor(std::move(m_visitor));
+
+  parser.handler().visitor().m_int64 = v_int64;
 
   parser.write_some(false, js.data(), js.size(), ec);
 }
@@ -272,13 +280,14 @@ TEST_F(TestJsonPointer, DocDouble)
 
   builder.add_pointer("", 668);
 
-  m_visitor->m_double = 888.1;
+  double v_double = 888.1;
 
-  std::string js = fmt::format("{}", m_visitor->m_double.value());
+  std::string js = fmt::format("{}", v_double);
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
-  parser.handler().set_visitor(std::move(m_visitor));
+
+  parser.handler().visitor().m_double = v_double;
 
   parser.write_some(false, js.data(), js.size(), ec);
 }
@@ -291,13 +300,14 @@ TEST_F(TestJsonPointer, DocBool)
 
   builder.add_pointer("", 668);
 
-  m_visitor->m_bool = true;
+  bool v_bool = true;
 
-  std::string js = fmt::format("{}", m_visitor->m_bool.value() ? "true" : "false");
+  std::string js = fmt::format("{}", v_bool ? "true" : "false");
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
-  parser.handler().set_visitor(std::move(m_visitor));
+
+  parser.handler().visitor().m_bool = v_bool;
 
   parser.write_some(false, js.data(), js.size(), ec);
 }
@@ -305,71 +315,65 @@ TEST_F(TestJsonPointer, DocBool)
 TEST_F(TestJsonPointer, IgnoreNestedString)
 {
   class visitor_ns final:
-            public json_handler::visitor_type
+            public test_visitor
   {
     public:
-      void apply_str(const json_scope & /* scope */,
-                 value_type & /* payload */,
+      void apply_str(value_type & /* payload */,
                      std::string_view /* str */) override
       {
         ++count;
       }
-
-      int count = 0;
   };
 
-  auto l_visitor = std::make_unique<visitor_ns>();
-  auto raw_visitor = l_visitor.get();
+  using builder_type = yy_json::json_pointer_builder<int, visitor_ns>;
+  using handler_type = builder_type::handler_type;
+  using parser_type = boost::json::basic_parser<handler_type>;
 
   boost::json::error_code ec{};
   auto options = boost::json::parse_options{};
-  jp_builder builder{};
+  builder_type builder{};
   builder.add_pointer("/abc", 668);
 
   std::string js = fmt::format("{{ 'abc' : '777', 'nested' : {{ 'abc' : '888' }} }}");
   prepare_json(js);
 
-  json_parser parser{options, builder.create(options.max_depth)};
-  parser.handler().set_visitor(std::move(l_visitor));
+  parser_type parser{options, builder.create(options.max_depth)};
 
   parser.write_some(false, js.data(), js.size(), ec);
 
-  EXPECT_EQ(1, raw_visitor->count);
+  EXPECT_EQ(1, parser.handler().visitor().count);
 }
 
 TEST_F(TestJsonPointer, MatchNestedString)
 {
   class visitor_ns final:
-            public json_handler::visitor_type
+            public test_visitor
   {
     public:
-      void apply_str(const json_scope & /* scope */,
-                 value_type & /* payload */,
+      void apply_str(value_type & /* payload */,
                      std::string_view /* str */) override
       {
         ++count;
       }
-
-      int count = 0;
   };
 
-  auto l_visitor = std::make_unique<visitor_ns>();
-  auto raw_visitor = l_visitor.get();
+  using builder_type = yy_json::json_pointer_builder<int, visitor_ns>;
+  using handler_type = builder_type::handler_type;
+  using parser_type = boost::json::basic_parser<handler_type>;
 
   boost::json::error_code ec{};
   auto options = boost::json::parse_options{};
-  jp_builder builder{};
+  builder_type builder{};
   builder.add_pointer("/nested/abc", 668);
 
   std::string js = fmt::format("{{ 'abc' : '777', 'nested' : {{ 'abc' : '888' }} }}");
   prepare_json(js);
 
-  json_parser parser{options, builder.create(options.max_depth)};
-  parser.handler().set_visitor(std::move(l_visitor));
+  parser_type parser{options, builder.create(options.max_depth)};
 
   parser.write_some(false, js.data(), js.size(), ec);
 
-  EXPECT_EQ(1, raw_visitor->count);
+  EXPECT_EQ(1, parser.handler().visitor().count);
 }
 
 
