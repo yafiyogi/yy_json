@@ -135,8 +135,8 @@ class Query final
     }
 
   private:
-    trie_vector m_nodes;
-    data_vector m_data;
+    trie_vector m_nodes{};
+    data_vector m_data{};
 };
 
 template<typename LabelType,
@@ -504,10 +504,10 @@ class handler final
       }
     }
 
-    std::string m_int_buffer;
-    scope_type m_scope;
-    query_type m_pointers;
-    visitor_type m_visitor;
+    std::string m_int_buffer{};
+    scope_type m_scope{};
+    query_type m_pointers{};
+    visitor_type m_visitor{};
 };
 
 } // namespace json_pointer_detail
