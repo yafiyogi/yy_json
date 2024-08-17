@@ -231,7 +231,6 @@ class handler final
     constexpr handler() noexcept = delete;
     handler(const handler &) = delete;
     constexpr handler(handler &&) noexcept = default;
-    constexpr ~handler() noexcept = default;
 
     handler & operator=(const handler &) = delete;
     constexpr handler & operator=(handler &&) noexcept = default;
