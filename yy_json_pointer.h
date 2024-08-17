@@ -85,7 +85,6 @@ class Query final
     Query() noexcept = default;
     Query(const Query &) = delete;
     constexpr Query(Query &&) noexcept = default;
-    constexpr ~Query() = default;
 
     Query & operator=(const Query &) = delete;
     constexpr Query & operator=(Query &&) noexcept = default;
@@ -530,7 +529,6 @@ class json_pointer_builder final
     constexpr json_pointer_builder() noexcept = default;
     json_pointer_builder(const json_pointer_builder &) = delete;
     constexpr json_pointer_builder(json_pointer_builder &&) noexcept = default;
-    constexpr ~json_pointer_builder() noexcept = default;
 
     json_pointer_builder & operator=(const json_pointer_builder &) = delete;
     constexpr json_pointer_builder & operator=(json_pointer_builder &&) noexcept = default;
