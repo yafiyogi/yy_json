@@ -37,6 +37,7 @@
 
 #include "boost/json/basic_parser_impl.hpp"
 #include "fmt/core.h"
+#include "fmt/compile.h"
 
 #include "yy_cpp/yy_int_util.h"
 #include "yy_cpp/yy_fm_flat_trie_ptr.h"
@@ -196,7 +197,6 @@ struct scope_element final
     query_type::node_type * state{};
     query_type::node_type * last_found{};
     ScopeType scope_type = ScopeType::None;
-    bool stop = false;
 };
 
 template<typename ValueType,
@@ -414,6 +414,8 @@ class handler final
     }
 
   private:
+    static constexpr auto int_buffer_format{FMT_COMPILE("")};
+
     constexpr bool handle_scope() noexcept
     {
       auto & curr = m_scope.back();
@@ -423,7 +425,7 @@ class handler final
         case ScopeType::Array:
         {
           m_int_buffer.clear();
-          fmt::format_to(std::back_inserter(m_int_buffer), "{}"sv, curr.idx);
+          fmt::format_to(std::back_inserter(m_int_buffer), int_buffer_format, curr.idx);
 
           curr.last_found = m_pointers.find_level(std::string_view{m_int_buffer}, curr.state);
           ++curr.idx;
