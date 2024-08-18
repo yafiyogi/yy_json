@@ -55,6 +55,8 @@ using namespace std::string_view_literals;
 
 namespace json_pointer_detail {
 
+using namespace fmt::literals;
+
 template<typename LabelType,
          typename ValueType>
 class Query final
@@ -211,6 +213,7 @@ class handler final
     using pointers_config_type = typename traits::pointers_config_type;
     using query_type = typename traits::query_type;
     using visitor_type = yy_traits::remove_cvr_t<Visitor>;
+    using size_type = scope_element_type::size_type;
 
     constexpr static std::size_t max_object_size = std::numeric_limits<std::size_t>::max();
     constexpr static std::size_t max_array_size = std::numeric_limits<std::size_t>::max();
@@ -247,7 +250,7 @@ class handler final
 
     constexpr bool on_document_begin(boost::json::error_code & /* ec */)
     {
-      m_scope.emplace_back(scope_element_type{"", 0, m_pointers.root(), nullptr, ScopeType::Doc});
+      m_scope.emplace_back(""sv, size_type{}, m_pointers.root(), nullptr, ScopeType::Doc);
       return true;
     }
 
@@ -263,7 +266,7 @@ class handler final
 
       auto & curr = m_scope.back();
 
-      m_scope.emplace_back(scope_element_type{"", 0, curr.last_found, nullptr, ScopeType::Object});
+      m_scope.emplace_back(""sv, size_type{}, curr.last_found, nullptr, ScopeType::Object);
       return true;
     }
 
@@ -280,7 +283,7 @@ class handler final
 
       auto & curr = m_scope.back();
 
-      m_scope.emplace_back(scope_element_type{"", 0, curr.last_found, nullptr, ScopeType::Array});
+      m_scope.emplace_back(""sv, size_type{}, curr.last_found, nullptr, ScopeType::Array);
       return true;
     }
 
@@ -412,7 +415,7 @@ class handler final
     }
 
   private:
-    static constexpr auto int_buffer_format{FMT_COMPILE("")};
+    static constexpr auto int_buffer_format{"{}"_cf};
 
     constexpr bool handle_scope() noexcept
     {

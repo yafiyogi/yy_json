@@ -56,7 +56,7 @@ PathLevels json_pointer_tokenize(const std::string_view p_pointer) noexcept
   while(!tokenizer.empty())
   {
     auto level = tokenizer.scan();
-    levels.emplace_back(PathLevel{level.begin(), level.end()});
+    levels.emplace_back(level.begin(), level.end());
   }
 
   return levels;
