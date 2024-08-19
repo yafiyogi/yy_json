@@ -108,7 +108,8 @@ TEST_F(TestJsonPointer, Add)
     builder.add_pointer(v, val++);
   }
 
-  auto config = builder.create();
+  auto options = boost::json::parse_options{};
+  auto config = builder.create(options.max_depth);
 
   auto root = config.pointers.root();
 
@@ -136,7 +137,8 @@ TEST_F(TestJsonPointer, AddOutOfOrder)
     builder.add_pointer(v, val++);
   }
 
-  auto config = builder.create();
+  auto options = boost::json::parse_options{};
+  auto config = builder.create(options.max_depth);
 
   auto root = config.pointers.root();
 

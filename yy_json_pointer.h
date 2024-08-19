@@ -58,7 +58,8 @@ namespace json_pointer_detail {
 using namespace fmt::literals;
 
 template<typename LabelType,
-         typename ValueType>
+         typename ValueType,
+         typename TokenizerType>
 class Query final
 {
   public:
@@ -69,6 +70,7 @@ class Query final
     using size_type = typename traits::size_type;
     using trie_vector = typename traits::trie_vector;
     using data_vector = typename traits::data_vector;
+    using tokenizer_type = TokenizerType;
 
     struct state_type final
     {
@@ -109,8 +111,7 @@ class Query final
 
     constexpr value_type * find_pointer(std::string_view p_pointer) noexcept
     {
-      yy_util::tokenizer_first<std::string_view::value_type> tokenizer{yy_quad::make_const_span(p_pointer),
-                                                                       json_detail::PathLevelSeparatorChar};
+      tokenizer_type tokenizer{yy_quad::make_const_span(p_pointer)};
 
       auto state = root();
       while(!tokenizer.empty())
@@ -150,6 +151,11 @@ template<typename LabelType,
 struct scope_element;
 
 
+template<typename LabelType>
+using json_tokenizer_type = yy_data::fm_flat_trie_ptr_detail::label_word_tokenizer<LabelType,
+                                                                                   json_detail::PathLevelSeparatorChar,
+                                                                                   yy_util::tokenizer_first>;
+
 template<typename LabelType,
          typename ValueType>
 struct pointer_traits final
@@ -158,12 +164,13 @@ struct pointer_traits final
     using value_type = yy_traits::remove_cvr_t<ValueType>;
     using pointers_builder_type = yy_data::fm_flat_trie_ptr<label_type,
                                                             value_type,
-                                                            json_pointer_detail::Query>;
+                                                            json_pointer_detail::Query,
+                                                            json_tokenizer_type>;
     using size_type = typename pointers_builder_type::size_type;
     using pointers_config_type = pointers_config<label_type, value_type>;
     using scope_element_type = scope_element<label_type, value_type>;
 
-    using query_type = typename pointers_builder_type::automaton;
+    using query_type = typename pointers_builder_type::automaton_type;
 };
 
 template<typename LabelType,
@@ -549,18 +556,10 @@ class json_pointer_builder final
                     || (std::is_pointer_v<InputValueType> && std::is_base_of_v<value_type, yy_traits::remove_cvr_t<std::remove_pointer<InputValueType>>>),
                     "Value is of an incompatible type.");
 
-      auto levels = json_pointer_tokenize(json_pointer_trim(p_pointer));
-
-      m_max_depth = std::max(m_max_depth + 1, levels.size());
-
-      auto [data, added] = m_pointers_builder.add(levels, std::forward<InputValueType>(value));
+      p_pointer = json_pointer_trim(p_pointer);
+      auto [data, added] = m_pointers_builder.add(p_pointer, std::forward<InputValueType>(value));
 
       return data_added_type{data, added};
-    }
-
-    constexpr pointers_config_type create()
-    {
-      return create(m_max_depth);
     }
 
     constexpr pointers_config_type create(size_t p_max_depth)
