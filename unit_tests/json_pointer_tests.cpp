@@ -119,9 +119,9 @@ TEST_F(TestJsonPointer, Add)
     ++idx;
   });
 
-  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/abc"));
-  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/def"));
-  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/ghi"));
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/abc"sv));
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/def"sv));
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/ghi"sv));
 }
 
 TEST_F(TestJsonPointer, AddOutOfOrder)
@@ -148,9 +148,9 @@ TEST_F(TestJsonPointer, AddOutOfOrder)
     ++idx;
   });
 
-  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/abc"));
-  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/def"));
-  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/ghi"));
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/abc"sv));
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/def"sv));
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/ghi"sv));
 }
 
 TEST_F(TestJsonPointer, SimpleString)
@@ -159,11 +159,11 @@ TEST_F(TestJsonPointer, SimpleString)
   auto options = boost::json::parse_options{};
   jp_builder builder{};
 
-  builder.add_pointer("/abc", 668);
+  builder.add_pointer("/abc"sv, 668);
 
   auto v_str = "eight eight eight"sv;
 
-  std::string js = fmt::format("{{ 'abc' : '{}'}}", v_str);
+  std::string js = fmt::format("{{ 'abc' : '{}'}}"sv, v_str);
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
@@ -179,11 +179,11 @@ TEST_F(TestJsonPointer, SimpleInt64)
   auto options = boost::json::parse_options{};
   jp_builder builder{};
 
-  builder.add_pointer("/abc", 668);
+  builder.add_pointer("/abc"sv, 668);
 
   int64_t v_int64 = 888;
 
-  std::string js = fmt::format("{{ 'abc' : {} }}", v_int64);
+  std::string js = fmt::format("{{ 'abc' : {} }}"sv, v_int64);
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
@@ -199,11 +199,11 @@ TEST_F(TestJsonPointer, SimpleDouble)
   auto options = boost::json::parse_options{};
   jp_builder builder{};
 
-  builder.add_pointer("/abc", 668);
+  builder.add_pointer("/abc"sv, 668);
 
   double v_double = 888.1;
 
-  std::string js = fmt::format("{{ 'abc' : {} }}", v_double);
+  std::string js = fmt::format("{{ 'abc' : {} }}"sv, v_double);
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
@@ -219,11 +219,11 @@ TEST_F(TestJsonPointer, SimpleBool)
   auto options = boost::json::parse_options{};
   jp_builder builder{};
 
-  builder.add_pointer("/abc", 668);
+  builder.add_pointer("/abc"sv, 668);
 
   bool v_bool = true;
 
-  std::string js = fmt::format("{{ 'abc' : {} }}", v_bool ? "true" : "false");
+  std::string js = fmt::format("{{ 'abc' : {} }}"sv, v_bool ? "true" : "false");
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
@@ -244,7 +244,7 @@ TEST_F(TestJsonPointer, DocString)
 
   auto v_str = "eight eight eight"sv;
 
-  std::string js = fmt::format("'{}'", v_str);
+  std::string js = fmt::format("'{}'"sv, v_str);
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};
@@ -264,7 +264,7 @@ TEST_F(TestJsonPointer, DocInt64)
 
   int64_t v_int64 = 888;
 
-  std::string js = fmt::format("{}", v_int64);
+  std::string js = fmt::format("{}"sv, v_int64);
   prepare_json(js);
 
   json_parser parser{options, builder.create(options.max_depth)};

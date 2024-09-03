@@ -30,7 +30,7 @@
 
 namespace yafiyogi::yy_json::json_detail {
 
-inline constexpr std::string_view PathLevelSeparator = "/";
-inline constexpr std::string_view::value_type PathLevelSeparatorChar = PathLevelSeparator[0];
+inline constexpr const std::string_view PathLevelSeparator{"/"};
+inline constexpr const std::string_view::value_type PathLevelSeparatorChar{PathLevelSeparator[0]};
 
 } // namespace yafiyogi::yy_json::json_detail

@@ -42,7 +42,6 @@
 #include "yy_cpp/yy_int_util.h"
 #include "yy_cpp/yy_fm_flat_trie_ptr.h"
 #include "yy_cpp/yy_span.h"
-#include "yy_cpp/yy_tokenizer.h"
 #include "yy_cpp/yy_type_traits.h"
 #include "yy_cpp/yy_vector.h"
 
@@ -57,25 +56,28 @@ namespace json_pointer_detail {
 
 using namespace fmt::literals;
 
-template<typename LabelType,
-         typename ValueType,
-         typename TokenizerType>
+template<typename TraitsType>
 class Query final
 {
   public:
-    using traits = yy_data::fm_flat_trie_ptr_detail::trie_ptr_traits<LabelType, ValueType>;
+    using traits = TraitsType;
+
     using label_type = typename traits::label_type;
-    using node_type = typename traits::node_type;
+    using node_type = typename traits::ptr_node_type;
+    using node_ptr = typename traits::ptr_node_ptr;
     using value_type = typename traits::value_type;
+    using value_ptr = typename traits::value_ptr;
     using size_type = typename traits::size_type;
-    using trie_vector = typename traits::trie_vector;
+    using trie_vector = typename traits::ptr_trie_vector;
     using data_vector = typename traits::data_vector;
-    using tokenizer_type = TokenizerType;
+
+    using tokenizer_type = typename traits::tokenizer_type;
+    using label_span_type = typename tokenizer_type::label_span_type;
 
     struct state_type final
     {
         size_type level{};
-        node_type * state{};
+        node_ptr state{};
     };
     using states_type = yy_quad::simple_vector<state_type>;
 
@@ -94,12 +96,47 @@ class Query final
     constexpr Query & operator=(Query &&) noexcept = default;
 
     [[nodiscard]]
-    constexpr node_type * find_level(std::string_view key, node_type * scope) noexcept
+    constexpr node_ptr find_level(std::string_view key, node_ptr scope) noexcept
     {
-      node_type * state{};
+      return find_level(yy_quad::make_const_span(key), scope);
+    }
+
+    [[nodiscard]]
+    constexpr value_ptr find_pointer(std::string_view p_pointer) noexcept
+    {
+      if(p_pointer.empty())
+      {
+        return nullptr;
+      }
+
+      tokenizer_type tokenizer{yy_quad::make_const_span(p_pointer)};
+
+      auto state = root();
+      while(!tokenizer.empty())
+      {
+        if(state = find_level(tokenizer.scan(), state);
+           nullptr == state)
+        {
+          return nullptr;
+        }
+      }
+
+      return state->data();
+    }
+
+    constexpr node_ptr root() noexcept
+    {
+      return m_nodes.data();
+    }
+
+  private:
+    [[nodiscard]]
+    constexpr node_ptr find_level(label_span_type key, node_ptr scope) noexcept
+    {
+      node_ptr state{};
       if(nullptr != scope)
       {
-        auto next_state_do = [&state](node_type ** edge_node, size_type) {
+        auto next_state_do = [&state](node_ptr * edge_node, size_type) {
           state = *edge_node;
         };
 
@@ -109,35 +146,6 @@ class Query final
       return state;
     }
 
-    constexpr value_type * find_pointer(std::string_view p_pointer) noexcept
-    {
-      tokenizer_type tokenizer{yy_quad::make_const_span(p_pointer)};
-
-      auto state = root();
-      while(!tokenizer.empty())
-      {
-        auto token = tokenizer.scan();
-        if(state = find_level(std::string_view{token.begin(), token.end()}, state);
-           nullptr == state)
-        {
-          break;
-        }
-      }
-
-      value_type * found = nullptr;
-      if(nullptr != state)
-      {
-        found = state->data();
-      }
-      return found;
-    }
-
-    constexpr node_type * root() noexcept
-    {
-      return m_nodes.data();
-    }
-
-  private:
     trie_vector m_nodes{};
     data_vector m_data{};
 };
@@ -152,9 +160,9 @@ struct scope_element;
 
 
 template<typename LabelType>
-using json_tokenizer_type = yy_data::fm_flat_trie_ptr_detail::label_word_tokenizer<LabelType,
-                                                                                   json_detail::PathLevelSeparatorChar,
-                                                                                   yy_util::tokenizer_first>;
+using json_tokenizer_type = yy_trie::label_word_tokenizer<LabelType,
+                                                          json_detail::PathLevelSeparatorChar,
+                                                          yy_util::tokenizer_first>;
 
 template<typename LabelType,
          typename ValueType>
@@ -202,8 +210,8 @@ struct scope_element final
 
     std::string_view key;
     size_type idx{};
-    query_type::node_type * state{};
-    query_type::node_type * last_found{};
+    query_type::node_ptr state{};
+    query_type::node_ptr last_found{};
     ScopeType scope_type = ScopeType::None;
 };
 
