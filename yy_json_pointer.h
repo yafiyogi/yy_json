@@ -76,8 +76,8 @@ class Query final
 
     struct state_type final
     {
-        size_type level{};
-        node_ptr state{};
+        size_type level = 0;
+        node_ptr state = nullptr;
     };
     using states_type = yy_quad::simple_vector<state_type>;
 
@@ -133,7 +133,7 @@ class Query final
     [[nodiscard]]
     constexpr node_ptr find_level(label_span_type key, node_ptr scope) noexcept
     {
-      node_ptr state{};
+      node_ptr state = nullptr;
       if(nullptr != scope)
       {
         auto next_state_do = [&state](node_ptr * edge_node, size_type) {
@@ -190,7 +190,7 @@ struct pointers_config final
     using size_type = typename traits::size_type;
 
     query_type pointers{};
-    size_type max_depth{};
+    size_type max_depth = 0;
 };
 
 enum class ScopeType:uint8_t { None,
@@ -209,9 +209,9 @@ struct scope_element final
     using size_type = typename traits::size_type;
 
     std::string_view key;
-    size_type idx{};
-    query_type::node_ptr state{};
-    query_type::node_ptr last_found{};
+    size_type idx = 0;
+    query_type::node_ptr state = nullptr;
+    query_type::node_ptr last_found = nullptr;
     ScopeType scope_type = ScopeType::None;
 };
 
@@ -579,7 +579,7 @@ class json_pointer_builder final
 
   private:
     pointers_builder_type m_pointers_builder{};
-    size_type m_max_depth{};
+    size_type m_max_depth = 0;
 };
 
 } // namespace yafiyogi:yy_json
