@@ -47,5 +47,5 @@ add_dependencies(test test_yy_json)
 
 # Coverage target
 add_cmake_coverage(yy_json test)
-add_cmake_asan(test_yy_json)
-add_cmake_lsan(test_yy_json)
+add_cmake_asan(yy_json test_yy_json)
+add_cmake_lsan(yy_json test_yy_json)
