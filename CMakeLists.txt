@@ -35,11 +35,12 @@ set(YY_ROOT "${PROJECT_SOURCE_DIR}/..")
 set(YY_CMAKE "${YY_ROOT}/yy_cmake")
 
 include(${YY_CMAKE}/cmake_common.txt)
-
-include(${YY_CMAKE}/cmake_boost-1.84.0.txt)
 include(${YY_CMAKE}/cmake_clang_tidy.txt)
 
+include(${YY_CMAKE}/cmake_boost-1.84.0.txt)
+
 find_package(Boost 1.84.0 REQUIRED COMPONENTS json)
+find_package(yy_cpp REQUIRED)
 
 add_library(yy_json STATIC)
 

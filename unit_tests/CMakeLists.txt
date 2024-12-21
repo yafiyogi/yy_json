@@ -12,6 +12,11 @@ find_package(yy_test REQUIRED)
 add_executable(test_yy_json
   json_pointer_tests.cpp )
 
+target_compile_options(yy_json
+  PRIVATE
+  "-DSPDLOG_COMPILED_LIB"
+  "-DSPDLOG_FMT_EXTERNAL")
+
 target_include_directories(test_yy_json
   PRIVATE
     "${PROJECT_SOURCE_DIR}/.."
@@ -21,11 +26,6 @@ target_include_directories(test_yy_json
 target_link_directories(test_yy_json
   PUBLIC
   /opt/local/lib )
-
-target_compile_options(yy_json
-  PRIVATE
-  "-DSPDLOG_COMPILED_LIB"
-  "-DSPDLOG_FMT_EXTERNAL")
 
 target_link_libraries(test_yy_json
   yy_json
