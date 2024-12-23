@@ -18,19 +18,20 @@ target_compile_options(yy_json
   "-DSPDLOG_FMT_EXTERNAL")
 
 target_include_directories(test_yy_json
-  PRIVATE
+  SYSTEM PRIVATE
     "${PROJECT_SOURCE_DIR}/.."
     "${CMAKE_INSTALL_PREFIX}/include"
     "${YY_THIRD_PARTY_LIBRARY}/include" )
 
 target_link_directories(test_yy_json
   PUBLIC
-  /opt/local/lib )
+    "${CMAKE_INSTALL_PREFIX}/lib"
+    /opt/local/lib )
 
 target_link_libraries(test_yy_json
   yy_json
-  yy_test::yy_test
-  yy_cpp::yy_cpp
+  yy_test
+  yy_cpp
   Boost::locale
   Boost::json
   fmt::fmt
