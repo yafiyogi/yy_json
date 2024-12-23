@@ -45,7 +45,7 @@ find_package(yy_cpp REQUIRED)
 add_library(yy_json STATIC)
 
 target_include_directories(yy_json
-  PRIVATE
+  SYSTEM PRIVATE
     "${CMAKE_INSTALL_PREFIX}/include"
     "${YY_THIRD_PARTY_LIBRARY}/include" )
 
