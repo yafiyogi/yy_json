@@ -74,13 +74,6 @@ class Query final
     using tokenizer_type = typename traits::tokenizer_type;
     using label_span_type = typename tokenizer_type::label_span_type;
 
-    struct state_type final
-    {
-        size_type level = 0;
-        node_ptr state = nullptr;
-    };
-    using states_type = yy_quad::simple_vector<state_type>;
-
     constexpr explicit Query(trie_vector && p_nodes,
                              data_vector && p_data) noexcept:
       m_nodes(std::move(p_nodes)),
