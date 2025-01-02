@@ -36,7 +36,7 @@
 #include <type_traits>
 
 #include "boost/json/basic_parser_impl.hpp"
-#include "fmt/core.h"
+#include "fmt/format.h"
 #include "fmt/compile.h"
 
 #include "yy_cpp/yy_int_util.h"
