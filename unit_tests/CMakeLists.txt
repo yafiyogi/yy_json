@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.24)
 
 project(test_yy_json LANGUAGES CXX)
 
-find_package(Boost 1.84.0 REQUIRED COMPONENTS locale)
+include(${YY_CMAKE}/cmake_boost-1.84.0.txt)
+
+find_package(Boost CONFIG 1.84.0 REQUIRED COMPONENTS json locale)
 find_package(fmt REQUIRED)
 find_package(GTest REQUIRED)
 find_package(spdlog REQUIRED)

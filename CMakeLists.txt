@@ -27,7 +27,7 @@
 # PKG_CONFIG_PATH=${HOME}/code/tp/lib/pkgconfig:${HOME}/code/tp/share/pkgconfig:${PKG_CONFIG_PATH} cmake --fresh -DCMAKE_INSTALL_PREFIX=${HOME}/code/cpp/build -DYY_THIRD_PARTY_LIBRARY=${HOME}/code/tp -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE -DCMAKE_BUILD_TYPE=Release .
 # cmake --fresh -DCMAKE_INSTALL_PREFIX=${HOME}/code/cpp/build -DYY_THIRD_PARTY_LIBRARY=${HOME}/code/tp -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE -DCMAKE_BUILD_TYPE=Release .
 
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.31)
 
 project(yy_json LANGUAGES CXX VERSION 0.0.1)
 
@@ -36,11 +36,6 @@ set(YY_CMAKE "${YY_ROOT}/yy_cmake")
 
 include(${YY_CMAKE}/cmake_common.txt)
 include(${YY_CMAKE}/cmake_clang_tidy.txt)
-
-include(${YY_CMAKE}/cmake_boost-1.84.0.txt)
-
-find_package(Boost 1.84.0 REQUIRED COMPONENTS json)
-find_package(yy_cpp REQUIRED)
 
 add_library(yy_json STATIC)
 
