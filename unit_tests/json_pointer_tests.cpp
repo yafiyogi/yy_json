@@ -378,6 +378,27 @@ TEST_F(TestJsonPointer, MatchNestedString)
   EXPECT_EQ(1, parser.handler().visitor().count);
 }
 
+TEST_F(TestJsonPointer, MatchArray)
+{
+  boost::json::error_code ec{};
+  auto options = boost::json::parse_options{};
+  jp_builder builder{};
 
+  builder.add_pointer("/1", 668);
+
+  std::string js = fmt::format("['A', 'B', 'C']");
+  prepare_json(js);
+
+  auto config{builder.create(options.max_depth)};
+
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("/1"sv));
+  EXPECT_TRUE(nullptr != config.pointers.find_pointer("1"sv));
+
+  json_parser parser{options, std::move(config)};
+
+  parser.handler().visitor().m_str = "B";
+
+  parser.write_some(false, js.data(), js.size(), ec);
+}
 
 } // namespace yafiyogi::yy_cpp::tests
