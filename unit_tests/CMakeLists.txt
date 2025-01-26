@@ -12,7 +12,8 @@ find_package(yy_cpp REQUIRED)
 find_package(yy_test REQUIRED)
 
 add_executable(test_yy_json
-  json_pointer_tests.cpp )
+  json_pointer_tests.cpp
+  json_pointer_util_tests.cpp )
 
 target_compile_options(yy_json
   PRIVATE
