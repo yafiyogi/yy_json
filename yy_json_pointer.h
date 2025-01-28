@@ -44,6 +44,7 @@
 #include "yy_cpp/yy_span.h"
 #include "yy_cpp/yy_type_traits.h"
 #include "yy_cpp/yy_vector.h"
+#include "yy_cpp/yy_types.hpp"
 
 #include "yy_json_constants.h"
 #include "yy_json_pointer_util.h"
@@ -67,7 +68,6 @@ class Query final
     using node_ptr = typename traits::ptr_node_ptr;
     using value_type = typename traits::value_type;
     using value_ptr = typename traits::value_ptr;
-    using size_type = typename traits::size_type;
     using trie_vector = typename traits::ptr_trie_vector;
     using data_vector = typename traits::data_vector;
 
@@ -167,7 +167,6 @@ struct pointer_traits final
                                                             value_type,
                                                             json_pointer_detail::Query,
                                                             json_tokenizer_type>;
-    using size_type = typename pointers_builder_type::size_type;
     using pointers_config_type = pointers_config<label_type, value_type>;
     using scope_element_type = scope_element<label_type, value_type>;
 
@@ -180,7 +179,6 @@ struct pointers_config final
 {
     using traits = pointer_traits<LabelType, ValueType>;
     using query_type = typename traits::query_type;
-    using size_type = typename traits::size_type;
 
     query_type pointers{};
     size_type max_depth = 0;
@@ -199,7 +197,6 @@ struct scope_element final
     using value_type = typename traits::value_type;
     using label_type = typename traits::label_type;
     using query_type = typename traits::query_type;
-    using size_type = typename traits::size_type;
 
     std::string_view key;
     size_type idx = 0;
@@ -221,12 +218,11 @@ class handler final
     using pointers_config_type = typename traits::pointers_config_type;
     using query_type = typename traits::query_type;
     using visitor_type = yy_traits::remove_cvr_t<Visitor>;
-    using size_type = scope_element_type::size_type;
 
-    constexpr static std::size_t max_object_size = std::numeric_limits<std::size_t>::max();
-    constexpr static std::size_t max_array_size = std::numeric_limits<std::size_t>::max();
-    constexpr static std::size_t max_key_size = std::numeric_limits<std::size_t>::max();
-    constexpr static std::size_t max_string_size = std::numeric_limits<std::size_t>::max();
+    constexpr static size_type max_object_size = std::numeric_limits<size_type>::max();
+    constexpr static size_type max_array_size = std::numeric_limits<size_type>::max();
+    constexpr static size_type max_key_size = std::numeric_limits<size_type>::max();
+    constexpr static size_type max_string_size = std::numeric_limits<size_type>::max();
 
     template<typename ...Args>
     constexpr explicit handler(pointers_config_type && p_config, Args && ...args) noexcept:
@@ -234,7 +230,7 @@ class handler final
       m_pointers(std::move(p_config.pointers)),
       m_visitor(std::forward<Args>(args)...)
     {
-      m_int_buffer.reserve(yy_util::Digits<typename scope_element_type::size_type>::digits + 1);
+      m_int_buffer.reserve(yy_util::Digits<size_type>::digits + 1);
       m_scope.reserve(p_config.max_depth);
     }
 
@@ -530,7 +526,6 @@ class json_pointer_builder final
   public:
     using traits = json_pointer_detail::pointer_traits<std::string, ValueType>;
     using value_type = typename traits::value_type;
-    using size_type = typename traits::size_type;
     using pointers_builder_type = typename traits::pointers_builder_type;
     using handler_type = json_pointer_detail::handler<value_type, yy_traits::remove_cvr_t<Visitor>>;
 
