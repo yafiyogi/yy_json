@@ -47,15 +47,18 @@ target_compile_options(yy_json
   "-DSPDLOG_FMT_EXTERNAL")
 
 target_include_directories(test_yy_json
-  SYSTEM PRIVATE
+  PRIVATE
     "${PROJECT_SOURCE_DIR}/.."
-    "${CMAKE_INSTALL_PREFIX}/include"
+    "${CMAKE_INSTALL_PREFIX}/include" )
+
+target_include_directories(test_yy_json
+  SYSTEM PRIVATE
     "${YY_THIRD_PARTY_LIBRARY}/include" )
 
 target_link_directories(test_yy_json
-  PUBLIC
+  PRIVATE
     "${CMAKE_INSTALL_PREFIX}/lib"
-    /opt/local/lib )
+    "/opt/local/lib" )
 
 target_link_libraries(test_yy_json
   yy_json

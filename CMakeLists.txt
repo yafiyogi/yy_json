@@ -40,8 +40,11 @@ include(${YY_CMAKE}/cmake_clang_tidy.txt)
 add_library(yy_json STATIC)
 
 target_include_directories(yy_json
+  PRIVATE
+    "${CMAKE_INSTALL_PREFIX}/include" )
+
+target_include_directories(yy_json
   SYSTEM PRIVATE
-    "${CMAKE_INSTALL_PREFIX}/include"
     "${YY_THIRD_PARTY_LIBRARY}/include" )
 
 target_sources(yy_json
