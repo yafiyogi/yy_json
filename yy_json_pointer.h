@@ -41,6 +41,7 @@
 
 #include "yy_cpp/yy_int_util.h"
 #include "yy_cpp/yy_fm_flat_trie_ptr.h"
+#include "yy_cpp/yy_observer_ptr.hpp"
 #include "yy_cpp/yy_span.h"
 #include "yy_cpp/yy_type_traits.h"
 #include "yy_cpp/yy_vector.h"
@@ -99,35 +100,35 @@ class Query final
     {
       if(p_pointer.empty())
       {
-        return nullptr;
+        return value_ptr{};
       }
 
       tokenizer_type tokenizer{yy_quad::make_const_span(p_pointer)};
 
-      auto state = root();
+      node_ptr state{root()};
       while(!tokenizer.empty())
       {
         if(state = find_level(tokenizer.scan(), state);
-           nullptr == state)
+           !state)
         {
-          return nullptr;
+          return value_ptr{};
         }
       }
 
-      return state->data();
+      return value_ptr{state->data()};
     }
 
     constexpr node_ptr root() noexcept
     {
-      return m_nodes.data();
+      return node_ptr{m_nodes.data()};
     }
 
   private:
     [[nodiscard]]
     constexpr node_ptr find_level(label_span_type key, node_ptr scope) noexcept
     {
-      node_ptr state = nullptr;
-      if(nullptr != scope)
+      node_ptr state{};
+      if(!scope.empty())
       {
         auto next_state_do = [&state](node_ptr * edge_node, size_type) {
           state = *edge_node;
@@ -163,12 +164,14 @@ struct pointer_traits final
 {
     using label_type = yy_traits::remove_cvr_t<LabelType>;
     using value_type = yy_traits::remove_cvr_t<ValueType>;
+    using value_ptr = yy_data::observer_ptr<value_type>;
     using pointers_builder_type = yy_data::fm_flat_trie_ptr<label_type,
                                                             value_type,
                                                             json_pointer_detail::Query,
                                                             json_tokenizer_type>;
     using pointers_config_type = pointers_config<label_type, value_type>;
     using scope_element_type = scope_element<label_type, value_type>;
+    using node_ptr = pointers_builder_type::ptr_node_ptr;
 
     using query_type = typename pointers_builder_type::automaton_type;
 };
@@ -200,8 +203,8 @@ struct scope_element final
 
     std::string_view key;
     size_type idx = 0;
-    query_type::node_ptr state = nullptr;
-    query_type::node_ptr last_found = nullptr;
+    query_type::node_ptr state{};
+    query_type::node_ptr last_found{};
     ScopeType scope_type = ScopeType::None;
 };
 
@@ -212,6 +215,8 @@ class handler final
   public:
     using traits = pointer_traits<std::string, ValueType>;
     using value_type = typename traits::value_type;
+    using value_ptr = typename traits::value_ptr;
+    using node_ptr = typename traits::node_ptr;
     using label_type = typename traits::label_type;
     using scope_element_type = typename traits::scope_element_type;
     using scope_type = yy_quad::simple_vector<scope_element_type>;
@@ -242,7 +247,7 @@ class handler final
     constexpr handler & operator=(handler &&) noexcept = default;
 
 
-    constexpr value_type * find(std::string_view p_pointer) noexcept
+    constexpr value_ptr find(std::string_view p_pointer) noexcept
     {
       return m_pointers.find_pointer(p_pointer);
     }
@@ -254,7 +259,7 @@ class handler final
 
     constexpr bool on_document_begin(boost::json::error_code & /* ec */)
     {
-      m_scope.emplace_back(""sv, size_type{}, m_pointers.root(), nullptr, ScopeType::Doc);
+      m_scope.emplace_back(""sv, size_type{}, m_pointers.root(), node_ptr{}, ScopeType::Doc);
       return true;
     }
 
@@ -270,7 +275,7 @@ class handler final
 
       auto & curr = m_scope.back();
 
-      m_scope.emplace_back(""sv, size_type{}, curr.last_found, nullptr, ScopeType::Object);
+      m_scope.emplace_back(""sv, size_type{}, curr.last_found, node_ptr{}, ScopeType::Object);
       return true;
     }
 
@@ -287,7 +292,7 @@ class handler final
 
       auto & curr = m_scope.back();
 
-      m_scope.emplace_back(""sv, size_type{}, curr.last_found, nullptr, ScopeType::Array);
+      m_scope.emplace_back(""sv, size_type{}, curr.last_found, node_ptr{}, ScopeType::Array);
       return true;
     }
 
@@ -449,16 +454,16 @@ class handler final
           break;
       }
 
-      return nullptr != curr.last_found;
+      return !curr.last_found.empty();
     }
 
-    constexpr value_type * get_payload() noexcept
+    constexpr value_ptr get_payload() noexcept
     {
-      value_type * payload = nullptr;
+      value_ptr payload{};
       auto & curr = m_scope.back();
 
-      if(auto level = curr.last_found;
-         nullptr != level && !level->empty())
+      if(auto level{curr.last_found};
+         level && !level->empty())
       {
         payload = level->data();
       }
@@ -526,6 +531,7 @@ class json_pointer_builder final
   public:
     using traits = json_pointer_detail::pointer_traits<std::string, ValueType>;
     using value_type = typename traits::value_type;
+    using value_ptr = typename traits::value_ptr;
     using pointers_builder_type = typename traits::pointers_builder_type;
     using handler_type = json_pointer_detail::handler<value_type, yy_traits::remove_cvr_t<Visitor>>;
 
@@ -541,7 +547,7 @@ class json_pointer_builder final
 
     struct data_added_type final
     {
-        value_type * data = nullptr;
+        value_ptr data{};
         bool added = false;
     };
 
