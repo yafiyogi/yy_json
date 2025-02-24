@@ -130,7 +130,7 @@ class Query final
       node_ptr state{};
       if(!scope.empty())
       {
-        auto next_state_do = [&state](node_ptr * edge_node, size_type) {
+        auto next_state_do = [&state](auto edge_node, size_type) {
           state = *edge_node;
         };
 
