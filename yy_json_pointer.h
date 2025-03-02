@@ -279,7 +279,7 @@ class handler final
       return true;
     }
 
-    constexpr bool on_object_end(std::size_t /* size */,
+    constexpr bool on_object_end(size_type /* size */,
                                  boost::json::error_code & /* ec */)
     {
       m_scope.pop_back(yy_quad::ClearAction::Keep);
@@ -296,7 +296,7 @@ class handler final
       return true;
     }
 
-    constexpr bool on_array_end(std::size_t /* size */,
+    constexpr bool on_array_end(size_type /* size */,
                                 boost::json::error_code & /* ec */)
     {
       m_scope.pop_back(yy_quad::ClearAction::Keep);
@@ -304,14 +304,14 @@ class handler final
     }
 
     constexpr bool on_key_part(std::string_view /* part */,
-                               std::size_t /* size */,
+                               size_type /* size */,
                                boost::json::error_code & /* ec */)
     {
       return true;
     }
 
     constexpr bool on_key(std::string_view key,
-                          std::size_t /* size */,
+                          size_type /* size */,
                           boost::json::error_code & /* ec */)
     {
       auto & curr = m_scope.back();
@@ -323,14 +323,14 @@ class handler final
     }
 
     constexpr bool on_string_part(std::string_view /* part */,
-                                  std::size_t /* size */,
+                                  size_type /* size */,
                                   boost::json::error_code & /* ec */)
     {
       return true;
     }
 
     constexpr bool on_string(std::string_view raw_str,
-                             std::size_t /* size */,
+                             size_type /* size */,
                              boost::json::error_code & /* ec */)
     {
       if(handle_scope())
@@ -564,7 +564,7 @@ class json_pointer_builder final
       return data_added_type{data, added};
     }
 
-    constexpr pointers_config_type create(size_t p_max_depth)
+    constexpr pointers_config_type create(size_type p_max_depth)
     {
       m_max_depth = p_max_depth;
 

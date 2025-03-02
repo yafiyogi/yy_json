@@ -44,9 +44,9 @@ std::string_view json_pointer_trim(const std::string_view p_pointer) noexcept
 
 PathLevels json_pointer_tokenize(const std::string_view p_pointer) noexcept
 {
-  auto num_levels = static_cast<std::size_t>(std::count(p_pointer.begin(),
-                                                        p_pointer.end(),
-                                                        json_detail::PathLevelSeparatorChar));
+  auto num_levels = static_cast<size_type>(std::count(p_pointer.begin(),
+                                                      p_pointer.end(),
+                                                      json_detail::PathLevelSeparatorChar));
   PathLevels levels;
   levels.reserve(num_levels);
 
