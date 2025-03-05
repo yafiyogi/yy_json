@@ -279,7 +279,7 @@ class handler final
       return true;
     }
 
-    constexpr bool on_object_end(size_type /* size */,
+    constexpr bool on_object_end(std::size_t /* size */,
                                  boost::json::error_code & /* ec */)
     {
       m_scope.pop_back(yy_quad::ClearAction::Keep);
@@ -296,7 +296,7 @@ class handler final
       return true;
     }
 
-    constexpr bool on_array_end(size_type /* size */,
+    constexpr bool on_array_end(std::size_t /* size */,
                                 boost::json::error_code & /* ec */)
     {
       m_scope.pop_back(yy_quad::ClearAction::Keep);
@@ -304,14 +304,14 @@ class handler final
     }
 
     constexpr bool on_key_part(std::string_view /* part */,
-                               size_type /* size */,
+                               std::size_t /* size */,
                                boost::json::error_code & /* ec */)
     {
       return true;
     }
 
     constexpr bool on_key(std::string_view key,
-                          size_type /* size */,
+                          std::size_t /* size */,
                           boost::json::error_code & /* ec */)
     {
       auto & curr = m_scope.back();
@@ -323,14 +323,14 @@ class handler final
     }
 
     constexpr bool on_string_part(std::string_view /* part */,
-                                  size_type /* size */,
+                                  std::size_t /* size */,
                                   boost::json::error_code & /* ec */)
     {
       return true;
     }
 
     constexpr bool on_string(std::string_view raw_str,
-                             size_type /* size */,
+                             std::size_t /* size */,
                              boost::json::error_code & /* ec */)
     {
       if(handle_scope())
