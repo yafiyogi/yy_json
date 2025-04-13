@@ -123,6 +123,16 @@ class Query final
       return node_ptr{m_nodes.data()};
     }
 
+    constexpr size_type node_size() const noexcept
+    {
+      return m_nodes.size();
+    }
+
+    constexpr size_type data_size() const noexcept
+    {
+      return m_data.size();
+    }
+
   private:
     [[nodiscard]]
     constexpr node_ptr find_level(label_span_type key, node_ptr scope) noexcept
