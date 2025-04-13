@@ -61,7 +61,6 @@ install(TARGETS yy_json
   FILE_SET HEADERS DESTINATION include/yy_json)
 
 install(EXPORT yy_jsonTargets
-  FILE yy_jsonTargets.cmake
   NAMESPACE yy_json::
   DESTINATION lib/cmake/yy_json)
 
