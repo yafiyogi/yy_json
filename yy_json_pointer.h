@@ -555,11 +555,7 @@ class json_pointer_builder final
     json_pointer_builder & operator=(const json_pointer_builder &) = delete;
     constexpr json_pointer_builder & operator=(json_pointer_builder &&) noexcept = default;
 
-    struct data_added_type final
-    {
-        value_ptr data{};
-        bool added = false;
-    };
+    using data_added_type = pointers_builder_type::data_added_type;
 
     template<typename InputValueType>
     constexpr data_added_type add_pointer(std::string_view p_pointer, InputValueType && value)
@@ -569,9 +565,8 @@ class json_pointer_builder final
                     "Value is of an incompatible type.");
 
       p_pointer = json_pointer_trim(p_pointer);
-      auto [data, added] = m_pointers_builder.add(p_pointer, std::forward<InputValueType>(value));
 
-      return data_added_type{data, added};
+      return m_pointers_builder.add(p_pointer, std::forward<InputValueType>(value));
     }
 
     constexpr pointers_config_type create(size_type p_max_depth)
