@@ -60,6 +60,8 @@ target_link_directories(test_yy_json
     "${CMAKE_INSTALL_PREFIX}/lib"
     "/opt/local/lib" )
 
+target_link_directories(test_yy_json BEFORE PRIVATE ${YY_THIRD_PARTY_LIBRARY}/lib)
+
 target_link_libraries(test_yy_json
   yy_json
   yy_test
